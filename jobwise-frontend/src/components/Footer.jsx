@@ -1,12 +1,7 @@
-import React from 'react';
-import './Footer.css';
-
-const Footer = () => {
+export default function Footer() {
   return (
-    <footer className="footer">
-      <p>© {new Date().getFullYear()} Jobwise.ge | Built with ❤️ in Georgia</p>
+    <footer className="text-center py-4 text-sm text-gray-500 bg-gray-100 mt-8">
+      © {new Date().getFullYear()} Jobwise. All rights reserved.
     </footer>
   );
-};
-
-export default Footer;
+}
