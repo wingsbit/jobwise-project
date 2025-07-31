@@ -4,15 +4,16 @@ import {
   registerUser,
   logoutUser,
   getMe,
+  updateUser
 } from '../controllers/authController.js';
 import { verifyToken } from '../middleware/verifyToken.js';
 
 const router = express.Router();
 
-// Auth routes
-router.post('/register', registerUser);   // ✅ Register
-router.post('/login', loginUser);         // ✅ Login
-router.post('/logout', logoutUser);       // ✅ Logout
-router.get('/me', verifyToken, getMe);    // ✅ Protected Route
+router.post('/register', registerUser);
+router.post('/login', loginUser);
+router.post('/logout', logoutUser);
+router.get('/me', verifyToken, getMe);
+router.put('/update', verifyToken, updateUser); // ✅ Edit name/password
 
 export default router;

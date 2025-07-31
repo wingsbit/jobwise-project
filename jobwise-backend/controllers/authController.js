@@ -1,64 +1,101 @@
 import jwt from 'jsonwebtoken';
-
-export const loginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    console.log('📥 Login attempt:', { email, password });
-
-    if (!email || !password) {
-      console.warn('❗ Missing login fields');
-      return res.status(400).json({ msg: 'Email and password are required' });
-    }
-
-    if (!process.env.JWT_SECRET) {
-      console.error('❌ Missing JWT_SECRET in .env');
-      return res.status(500).json({ msg: 'Server config error' });
-    }
-
-    // In real app: lookup user + compare hashed password
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1d' });
-
-    console.log('✅ Login success:', email);
-    res.json({ token });
-  } catch (err) {
-    console.error('💥 Login error:', err);
-    res.status(500).json({ msg: 'Login failed internally' });
-  }
-};
+import bcrypt from 'bcryptjs';
+import User from '../models/User.js';
 
 export const registerUser = async (req, res) => {
   try {
-    console.log('🔔 Incoming register payload:', req.body);
-
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
-      console.warn('❗Missing fields:', { name, email, password });
       return res.status(400).json({ msg: 'All fields are required' });
     }
 
-    if (!process.env.JWT_SECRET) {
-      console.error('❌ Missing JWT_SECRET in .env');
-      return res.status(500).json({ msg: 'Server config error' });
+    const cleanEmail = email.toLowerCase().trim();
+
+    const existingUser = await User.findOne({ email: cleanEmail });
+    if (existingUser) {
+      return res.status(409).json({ msg: 'Email already registered' });
     }
 
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '1d',
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = await User.create({
+      name,
+      email: cleanEmail,
+      password: hashedPassword,
     });
 
-    console.log('✅ Signup success:', email);
-    res.status(201).json({ token });
+    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
+      expiresIn: '1d',
+    });
 
+    res.status(201).json({ token });
   } catch (err) {
     console.error('💥 Signup error:', err);
     res.status(500).json({ msg: 'Signup failed internally' });
   }
 };
 
-export const logoutUser = async (req, res) => {
+export const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ msg: 'Email and password are required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email: cleanEmail });
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(401).json({ msg: 'Invalid credentials' });
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '1d',
+    });
+
+    res.json({ token, user: { name: user.name, email: user.email } });
+  } catch (err) {
+    console.error('💥 Login error:', err);
+    res.status(500).json({ msg: 'Login failed internally' });
+  }
+};
+
+export const logoutUser = (req, res) => {
   res.json({ msg: 'Logout successful (client should clear token)' });
 };
 
 export const getMe = async (req, res) => {
-  res.json({ msg: 'User fetched successfully', user: req.user });
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    res.json({ user });
+  } catch (err) {
+    res.status(500).json({ msg: 'Failed to fetch user' });
+  }
+};
+
+export const updateUser = async (req, res) => {
+  try {
+    const { name, password } = req.body;
+    const updates = {};
+
+    if (name) updates.name = name;
+    if (password) updates.password = await bcrypt.hash(password, 10);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updates },
+      { new: true }
+    ).select('-password');
+
+    res.json({ user: updatedUser });
+  } catch (err) {
+    console.error('💥 Update error:', err);
+    res.status(500).json({ msg: 'Failed to update user' });
+  }
 };

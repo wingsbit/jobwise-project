@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API = "http://localhost:5000/api/auth";
+  const API = "http://localhost:5000/api";
 
   // ✅ Create a custom axios instance that includes token
   const api = axios.create({
