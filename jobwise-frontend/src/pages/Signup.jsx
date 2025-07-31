@@ -1,62 +1,37 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../lib/api";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../lib/api.js';
 
-export default function Signup() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+const Signup = () => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleSignup = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post("/auth/signup", { name, email, password });
-      const { token, user } = res.data;
-
-      localStorage.setItem("jobwise_token", token);
-      alert("Signup successful!");
-      navigate("/dashboard");
+      const res = await api.post('/api/auth/register', { name, email, password });
+      const token = res.data.token;
+      localStorage.setItem('token', token);
+      navigate('/dashboard');
     } catch (err) {
-      alert(err.response?.data?.msg || "Signup failed");
+      console.error('Signup error:', err.response?.data || err.message);
+      alert(err.response?.data?.msg || 'Signup failed');
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10">
-      <form onSubmit={handleSignup} className="bg-white p-6 rounded shadow-md">
-        <h1 className="text-xl font-bold mb-4 text-center">Signup</h1>
-        <input
-          type="text"
-          placeholder="Name"
-          className="w-full mb-4 px-4 py-2 border rounded"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          className="w-full mb-4 px-4 py-2 border rounded"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full mb-6 px-4 py-2 border rounded"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button
-          type="submit"
-          className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
-        >
-          Create Account
-        </button>
+    <div>
+      <h2>Sign Up</h2>
+      <form onSubmit={handleSubmit}>
+        <input type="text" placeholder="Name" value={name} onChange={e => setName(e.target.value)} required /><br />
+        <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required /><br />
+        <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required /><br />
+        <button type="submit">Create Account</button>
       </form>
     </div>
   );
-}
+};
+
+export default Signup;
