@@ -92,21 +92,42 @@ export const getMe = async (req, res) => {
   }
 };
 
-// ✅ Update user
+// ✅ Update user (improved)
 export const updateUser = async (req, res) => {
   try {
     const { name, password } = req.body;
+
+    // Ensure at least one change is provided
+    if (!name && !password) {
+      return res.status(400).json({ msg: "Please provide a name or password to update" });
+    }
+
     const updates = {};
 
-    if (name) updates.name = name;
-    if (password) updates.password = await bcrypt.hash(password, 10);
+    // Name validation
+    if (name && name.trim() !== "") {
+      updates.name = name.trim();
+    }
+
+    // Password validation
+    if (password && password.trim() !== "") {
+      if (password.length < 6) {
+        return res.status(400).json({ msg: "Password must be at least 6 characters" });
+      }
+      updates.password = await bcrypt.hash(password, 10);
+    }
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
       { $set: updates },
       { new: true }
-    ).select("-password");
+    ).select("name email"); // only safe fields
 
+    if (!updatedUser) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    console.log("✅ User updated:", updatedUser.email);
     res.json({ user: updatedUser });
   } catch (err) {
     console.error("💥 Update error:", err);

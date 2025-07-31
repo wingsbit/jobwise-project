@@ -7,10 +7,13 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white border-b px-4 py-3 shadow-sm flex justify-between items-center">
+      {/* Logo */}
       <Link to="/" className="text-xl font-bold text-indigo-600">
         Jobwise
       </Link>
-      <div className="space-x-4 flex items-center">
+
+      {/* Links */}
+      <div className="flex items-center space-x-4">
         {!user && (
           <>
             <Link to="/login" className="text-gray-600 hover:text-black">
@@ -21,14 +24,29 @@ export default function Navbar() {
             </Link>
           </>
         )}
+
         {user && (
           <>
+            {/* Avatar */}
+            <Link to="/profile" className="flex items-center gap-2 text-gray-600 hover:text-black">
+              <img
+                src={
+                  user?.avatar
+                    ? `${import.meta.env.VITE_API_URL}/uploads/${user.avatar}`
+                    : "/default-avatar.png"
+                }
+                alt="avatar"
+                className="w-8 h-8 rounded-full object-cover border"
+              />
+              <span>
+                {user?.name ? user.name : "Profile"}
+              </span>
+            </Link>
+
             <Link to="/dashboard" className="text-gray-600 hover:text-black">
               Dashboard
             </Link>
-            <Link to="/profile" className="text-gray-600 hover:text-black">
-              Profile{user?.name ? ` (${user.name})` : ""}
-            </Link>
+
             <button
               onClick={logout}
               className="text-red-500 hover:underline ml-2"

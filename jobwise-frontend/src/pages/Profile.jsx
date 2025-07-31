@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 
 export default function Profile() {
   const { user, setUser } = useAuth();
+
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,11 +22,14 @@ export default function Profile() {
     try {
       const { data } = await api.put("/auth/update", {
         name: name.trim(),
-        password: password.trim() || undefined, // don't send empty password
+        password: password.trim() || undefined, // send only if password entered
       });
 
-      setUser(data.user); // ✅ update AuthContext with new data
-      setPassword(""); // clear password field
+      // ✅ Update global AuthContext so Navbar/Dashboard refresh instantly
+      setUser(data.user);
+
+      // ✅ Reset password field & show success
+      setPassword("");
       toast.success("Profile updated successfully!");
     } catch (err) {
       toast.error(err.response?.data?.msg || "Update failed");
