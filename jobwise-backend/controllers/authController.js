@@ -1,84 +1,98 @@
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import User from '../models/User.js';
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import User from "../models/User.js";
 
+// ✅ Generate JWT helper
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+};
+
+// ✅ Register user
 export const registerUser = async (req, res) => {
+  console.log("📥 Incoming signup request:", req.body);
+  console.log("📥 REGISTER endpoint triggered:", req.body);
+
   try {
     const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
-      return res.status(400).json({ msg: 'All fields are required' });
+      console.warn("❌ Missing fields");
+      return res.status(400).json({ msg: "All fields are required" });
     }
 
     const cleanEmail = email.toLowerCase().trim();
-
     const existingUser = await User.findOne({ email: cleanEmail });
     if (existingUser) {
-      return res.status(409).json({ msg: 'Email already registered' });
+      console.warn("⚠️ Email already registered:", cleanEmail);
+      return res.status(409).json({ msg: "Email already registered" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const newUser = await User.create({
       name,
       email: cleanEmail,
       password: hashedPassword,
     });
 
-    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: '1d',
-    });
+    console.log("✅ User saved to DB:", newUser.email);
+    const token = generateToken(newUser._id);
 
     res.status(201).json({ token });
   } catch (err) {
-    console.error('💥 Signup error:', err);
-    res.status(500).json({ msg: 'Signup failed internally' });
+    console.error("💥 Signup error:", err);
+    res.status(500).json({ msg: "Signup failed internally" });
   }
 };
 
+// ✅ Login user
 export const loginUser = async (req, res) => {
+  console.log("📥 Login request:", req.body);
+
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ msg: 'Email and password are required' });
+      return res.status(400).json({ msg: "Email and password are required" });
     }
 
     const cleanEmail = email.toLowerCase().trim();
-
     const user = await User.findOne({ email: cleanEmail });
-    if (!user) return res.status(404).json({ msg: 'User not found' });
+    if (!user) {
+      console.warn("❌ User not found:", cleanEmail);
+      return res.status(404).json({ msg: "User not found" });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res.status(401).json({ msg: 'Invalid credentials' });
+    if (!isMatch) {
+      console.warn("❌ Invalid credentials for:", cleanEmail);
+      return res.status(401).json({ msg: "Invalid credentials" });
+    }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '1d',
-    });
+    const token = generateToken(user._id);
+    console.log("✅ Login successful:", user.email);
 
     res.json({ token, user: { name: user.name, email: user.email } });
   } catch (err) {
-    console.error('💥 Login error:', err);
-    res.status(500).json({ msg: 'Login failed internally' });
+    console.error("💥 Login error:", err);
+    res.status(500).json({ msg: "Login failed internally" });
   }
 };
 
+// ✅ Logout
 export const logoutUser = (req, res) => {
-  res.json({ msg: 'Logout successful (client should clear token)' });
+  res.json({ msg: "Logout successful (client should clear token)" });
 };
 
+// ✅ Get current user
 export const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.user.id).select("-password");
     res.json({ user });
   } catch (err) {
-    res.status(500).json({ msg: 'Failed to fetch user' });
+    res.status(500).json({ msg: "Failed to fetch user" });
   }
 };
 
+// ✅ Update user
 export const updateUser = async (req, res) => {
   try {
     const { name, password } = req.body;
@@ -91,11 +105,11 @@ export const updateUser = async (req, res) => {
       req.user.id,
       { $set: updates },
       { new: true }
-    ).select('-password');
+    ).select("-password");
 
     res.json({ user: updatedUser });
   } catch (err) {
-    console.error('💥 Update error:', err);
-    res.status(500).json({ msg: 'Failed to update user' });
+    console.error("💥 Update error:", err);
+    res.status(500).json({ msg: "Failed to update user" });
   }
 };

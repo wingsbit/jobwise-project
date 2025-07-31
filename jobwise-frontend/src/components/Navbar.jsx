@@ -10,7 +10,7 @@ export default function Navbar() {
       <Link to="/" className="text-xl font-bold text-indigo-600">
         Jobwise
       </Link>
-      <div className="space-x-4">
+      <div className="space-x-4 flex items-center">
         {!user && (
           <>
             <Link to="/login" className="text-gray-600 hover:text-black">
@@ -25,6 +25,9 @@ export default function Navbar() {
           <>
             <Link to="/dashboard" className="text-gray-600 hover:text-black">
               Dashboard
+            </Link>
+            <Link to="/profile" className="text-gray-600 hover:text-black">
+              Profile{user?.name ? ` (${user.name})` : ""}
             </Link>
             <button
               onClick={logout}

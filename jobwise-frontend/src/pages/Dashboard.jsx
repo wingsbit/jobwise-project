@@ -1,25 +1,37 @@
-import React from "react";
+import { useAuth } from "../context/AuthContext";
 
 export default function Dashboard() {
-  return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-3xl mx-auto bg-white shadow-md rounded-xl p-8">
-        <h1 className="text-3xl font-bold text-green-600 mb-2">
-          🎉 Welcome to the Dashboard!
-        </h1>
-        <p className="text-gray-700">
-          You’re successfully logged in. This is a protected route and only accessible to authenticated users.
-        </p>
+  const { user } = useAuth();
 
-        <div className="mt-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">What's Next?</h2>
-          <ul className="list-disc pl-5 space-y-1 text-gray-700">
-            <li>View your profile or update your info</li>
-            <li>Apply to jobs or post openings</li>
-            <li>Check saved jobs or applicants</li>
-            <li>Explore premium features</li>
-          </ul>
+  return (
+    <div className="p-6 max-w-4xl mx-auto">
+      {/* Welcome message */}
+      <h1 className="text-3xl font-bold mb-4">
+        Welcome{user?.name ? `, ${user.name}` : ""} 🎉
+      </h1>
+
+      {/* Basic user info */}
+      {user && (
+        <div className="bg-white shadow rounded-lg p-4 border mb-6">
+          <p className="mb-2">
+            <strong>Name:</strong> {user.name}
+          </p>
+          <p className="mb-2">
+            <strong>Email:</strong> {user.email}
+          </p>
         </div>
+      )}
+
+      {/* Future dashboard sections */}
+      <div className="bg-gray-100 p-4 rounded-lg border">
+        <p className="text-gray-600">
+          🚀 This is your dashboard. Soon you’ll see:
+        </p>
+        <ul className="list-disc ml-6 mt-2 text-gray-600">
+          <li>Saved jobs</li>
+          <li>Job applications</li>
+          <li>AI career suggestions</li>
+        </ul>
       </div>
     </div>
   );
