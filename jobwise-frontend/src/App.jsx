@@ -1,18 +1,19 @@
-// src/App.jsx
 import { Routes, Route } from "react-router-dom";
-import Dashboard from "./pages/Dashboard";
-import NotFound from "./pages/NotFound";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Home from "./pages/Home";
-import Profile from "./pages/Profile"; // ✅ added
-import Layout from "./components/Layout";
-import ProtectedRoute from "./components/ProtectedRoute";
+import Dashboard from "@pages/Dashboard";
+import NotFound from "@pages/NotFound";
+import Login from "@pages/Login";
+import Signup from "@pages/Signup";
+import Home from "@pages/Home";
+import Profile from "@pages/Profile";
+import AppShell from "@components/layout/AppShell"; // ✅ new layout
+import ProtectedRoute from "@components/auth/ProtectedRoute";
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Layout />}>
+      {/* All routes share AppShell */}
+      <Route path="/" element={<AppShell />}>
+        {/* Public routes */}
         <Route index element={<Home />} />
         <Route path="login" element={<Login />} />
         <Route path="signup" element={<Signup />} />
@@ -27,7 +28,7 @@ export default function App() {
           }
         />
         <Route
-          path="profile" // ✅ added
+          path="profile"
           element={
             <ProtectedRoute>
               <Profile />
@@ -35,7 +36,7 @@ export default function App() {
           }
         />
 
-        {/* 404 fallback */}
+        {/* 404 */}
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

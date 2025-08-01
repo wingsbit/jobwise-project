@@ -5,35 +5,33 @@ import toast from "react-hot-toast";
 
 export const AuthContext = createContext();
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+// ✅ Create shared Axios instance
+const api = axios.create({ baseURL: API_URL });
+
+// ✅ Attach token to all requests
+api.interceptors.request.use((config) => {
+  const savedToken = localStorage.getItem("token");
+  if (savedToken) {
+    config.headers.Authorization = `Bearer ${savedToken}`;
+  }
+  return config;
+});
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [loading, setLoading] = useState(true);
 
-  const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-
-  // Axios instance
-  const api = axios.create({
-    baseURL: API,
-  });
-
-  // Add token to every request
-  api.interceptors.request.use((config) => {
-    const savedToken = localStorage.getItem("token");
-    if (savedToken) {
-      config.headers.Authorization = `Bearer ${savedToken}`;
-    }
-    return config;
-  });
-
-  // ✅ Get logged-in user info
+  // ✅ Get current user (on refresh)
   const getCurrentUser = async () => {
     try {
-      const { data } = await api.get("/auth/me"); // ✅ Corrected endpoint
+      const { data } = await api.get("/auth/me");
       setUser(data.user);
     } catch (err) {
       console.error("❌ /auth/me error:", err.response?.data || err.message);
-      setUser(null);
+      logout(); // auto logout if token invalid
     } finally {
       setLoading(false);
     }
@@ -46,10 +44,15 @@ export const AuthProvider = ({ children }) => {
         email: email.toLowerCase().trim(),
         password,
       });
+
+      // Save token
       localStorage.setItem("token", data.token);
       setToken(data.token);
+
+      // ✅ Store user directly without waiting for /auth/me
+      setUser(data.user);
+
       toast.success("Login successful");
-      await getCurrentUser();
     } catch (err) {
       toast.error(err.response?.data?.msg || "Login failed");
     }
@@ -63,29 +66,31 @@ export const AuthProvider = ({ children }) => {
         email: email.toLowerCase().trim(),
         password,
       });
+
+      // Save token
       localStorage.setItem("token", data.token);
       setToken(data.token);
+
+      // ✅ Store user directly
+      setUser(data.user);
+
       toast.success("Signup successful");
-      await getCurrentUser();
     } catch (err) {
       toast.error(err.response?.data?.msg || "Signup failed");
     }
   };
 
   // ✅ Logout
-  const logout = async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch {}
+  const logout = () => {
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
     toast.success("Logged out");
   };
 
-  // ✅ Auto-fetch user if token exists
+  // ✅ Auto-fetch on refresh
   useEffect(() => {
-    if (token) {
+    if (token && !user) {
       getCurrentUser();
     } else {
       setLoading(false);
@@ -94,16 +99,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        setUser,
-        token,
-        loading,
-        login,
-        register,
-        logout,
-        getCurrentUser,
-      }}
+      value={{ user, setUser, token, loading, login, register, logout, getCurrentUser, api }}
     >
       {children}
     </AuthContext.Provider>
