@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
-import ProfileAvatar from "@components/auth/ProfileAvatar";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@components/ui/tabs";
-import { Input } from "@components/ui/input";
-import { Button } from "@components/ui/button";
-import { Card, CardContent } from "@components/ui/card";
+import ProfileAvatar from "@/components/auth/ProfileAvatar";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function Profile() {
   const { user, setUser, api } = useAuth();
@@ -53,10 +53,12 @@ export default function Profile() {
     }
   };
 
-  if (!user) return <div className="p-6 text-center">Loading...</div>;
+  if (!user) {
+    return <div className="p-6 text-center text-gray-600">Loading profile...</div>;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted/30">
       {/* Header */}
       <div className="relative bg-gradient-to-r from-indigo-600 to-purple-500 h-48 flex items-end px-8 pb-4">
         <ProfileAvatar />
@@ -76,55 +78,51 @@ export default function Profile() {
           </TabsList>
 
           <TabsContent value="overview">
-            <Card>
-              <CardContent className="pt-6">
-                <form onSubmit={handleUpdate} className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium">Name</label>
-                    <Input value={name} onChange={(e) => setName(e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium">Email</label>
-                    <Input value={user.email} disabled />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium">New Password</label>
-                    <Input
-                      type="password"
-                      placeholder="Leave blank"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </div>
-                  <Button type="submit" disabled={loading} className="w-full">
-                    {loading ? "Saving..." : "Save Changes"}
-                  </Button>
-                </form>
-              </CardContent>
+            <Card className="p-6 space-y-4">
+              <form onSubmit={handleUpdate} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium">Name</label>
+                  <Input value={name} onChange={(e) => setName(e.target.value)} required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Email</label>
+                  <Input value={user.email} disabled className="bg-muted" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">New Password</label>
+                  <Input
+                    type="password"
+                    placeholder="Leave blank to keep current"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                <Button type="submit" disabled={loading} className="bg-gradient-to-r from-indigo-600 to-purple-500">
+                  {loading ? "Saving..." : "Save Changes"}
+                </Button>
+              </form>
             </Card>
           </TabsContent>
 
           <TabsContent value="saved">
             {loadingJobs ? (
-              <p>Loading saved jobs...</p>
+              <p className="text-gray-500">Loading saved jobs...</p>
             ) : savedJobs.length > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2">
                 {savedJobs.map((job) => (
-                  <Card key={job._id}>
-                    <CardContent className="pt-4">
-                      <h3 className="font-semibold">{job.title}</h3>
-                      <p className="text-gray-500">{job.company}</p>
-                    </CardContent>
+                  <Card key={job._id} className="p-4 hover:shadow-md transition">
+                    <h3 className="font-semibold text-lg">{job.title}</h3>
+                    <p className="text-gray-500">{job.company}</p>
                   </Card>
                 ))}
               </div>
             ) : (
-              <p>No saved jobs yet.</p>
+              <p className="text-gray-500">No saved jobs yet.</p>
             )}
           </TabsContent>
 
           <TabsContent value="applications">
-            <p>Applications tracking coming soon...</p>
+            <p className="text-gray-500">Applications tracking coming soon...</p>
           </TabsContent>
         </Tabs>
       </div>
