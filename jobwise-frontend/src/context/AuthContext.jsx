@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
 
   const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
+  // Axios instance
   const api = axios.create({
     baseURL: API,
   });
@@ -25,18 +26,20 @@ export const AuthProvider = ({ children }) => {
     return config;
   });
 
+  // ✅ Get logged-in user info
   const getCurrentUser = async () => {
     try {
-      const { data } = await api.get("/users/profile");
+      const { data } = await api.get("/auth/me"); // ✅ Corrected endpoint
       setUser(data.user);
     } catch (err) {
-      console.error("❌ /users/profile error:", err.response?.data || err.message);
+      console.error("❌ /auth/me error:", err.response?.data || err.message);
       setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ Login
   const login = async (email, password) => {
     try {
       const { data } = await api.post("/auth/login", {
@@ -52,6 +55,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ✅ Register
   const register = async (name, email, password) => {
     try {
       const { data } = await api.post("/auth/register", {
@@ -68,6 +72,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ✅ Logout
   const logout = async () => {
     try {
       await api.post("/auth/logout");
@@ -78,6 +83,7 @@ export const AuthProvider = ({ children }) => {
     toast.success("Logged out");
   };
 
+  // ✅ Auto-fetch user if token exists
   useEffect(() => {
     if (token) {
       getCurrentUser();
