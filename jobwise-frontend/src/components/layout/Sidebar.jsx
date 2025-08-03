@@ -1,81 +1,60 @@
-import { Link, useLocation } from "react-router-dom";
-import { cn } from "@lib/utils";
-import { Button } from "@components/ui/button";
-import { useAuth } from "@context/AuthContext";
-import {
-  LayoutDashboard,
-  User,
-  Bookmark,
-  Briefcase,
-  MessageSquare,
-  LogOut
-} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 export default function Sidebar() {
-  const location = useLocation();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  const navItemsMain = [
-    { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/profile", label: "Profile", icon: User },
-    { to: "/saved-jobs", label: "Saved Jobs", icon: Bookmark },
-    { to: "/applications", label: "Applications", icon: Briefcase },
-  ];
-
-  const navItemsAI = [
-    { to: "/jobwiser", label: "Jobwiser AI Advisor", icon: MessageSquare },
-  ];
-
-  const renderNavItem = (item) => {
-    const Icon = item.icon;
-    return (
-      <Link
-        key={item.to}
-        to={item.to}
-        className={cn(
-          "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-          location.pathname === item.to
-            ? "bg-primary text-primary-foreground"
-            : "hover:bg-accent hover:text-accent-foreground"
-        )}
-      >
-        <Icon className="w-4 h-4" />
-        {item.label}
-      </Link>
-    );
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
   };
 
-  return (
-    <aside className="w-64 border-r bg-card flex flex-col">
-      <nav className="flex-1 p-4 space-y-4">
-        {/* Main Navigation */}
-        <div>
-          <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Main
-          </p>
-          <div className="space-y-1">{navItemsMain.map(renderNavItem)}</div>
-        </div>
+  const avatarUrl = user?.avatar
+    ? `${import.meta.env.VITE_API_URL}/uploads/${user.avatar}`
+    : null;
 
-        {/* AI Advisor */}
-        <div>
-          <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            AI Tools
-          </p>
-          <div className="space-y-1">{navItemsAI.map(renderNavItem)}</div>
+  return (
+    <aside className="hidden md:flex flex-col w-64 bg-sidebar border-r border-sidebar-border p-4">
+      {/* User Info */}
+      {user && (
+        <div className="flex flex-col items-center mb-6">
+          <Avatar className="w-20 h-20 mb-2">
+            <AvatarImage src={avatarUrl || undefined} className="object-cover" />
+            <AvatarFallback>
+              {user?.name?.charAt(0)?.toUpperCase() || "U"}
+            </AvatarFallback>
+          </Avatar>
+          <p className="font-semibold">{user.name}</p>
+          <p className="text-sm text-muted-foreground">{user.email}</p>
         </div>
+      )}
+
+      {/* Navigation */}
+      <nav className="flex flex-col gap-1 flex-grow">
+        <Link to="/dashboard" className="px-3 py-2 rounded hover:bg-accent hover:text-accent-foreground transition">
+          Dashboard
+        </Link>
+        <Link to="/profile" className="px-3 py-2 rounded hover:bg-accent hover:text-accent-foreground transition">
+          Profile
+        </Link>
+        <Link to="/saved-jobs" className="px-3 py-2 rounded hover:bg-accent hover:text-accent-foreground transition">
+          Saved Jobs
+        </Link>
+        <Link to="/applications" className="px-3 py-2 rounded hover:bg-accent hover:text-accent-foreground transition">
+          Applications
+        </Link>
+        <Link to="/ai-advisor" className="px-3 py-2 rounded hover:bg-accent hover:text-accent-foreground transition">
+          Jobwiser AI Advisor
+        </Link>
       </nav>
 
-      {/* Logout */}
-      <div className="p-4 border-t">
-        <Button
-          variant="destructive"
-          className="w-full flex items-center gap-2"
-          onClick={logout}
-        >
-          <LogOut className="w-4 h-4" />
-          Logout
-        </Button>
-      </div>
+      {/* Logout Button */}
+      <Button onClick={handleLogout} variant="destructive" className="mt-6 w-full">
+        Logout
+      </Button>
     </aside>
   );
 }

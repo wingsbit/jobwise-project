@@ -1,131 +1,114 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import toast from "react-hot-toast";
-import ProfileAvatar from "@/components/auth/ProfileAvatar";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import axios from "axios";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 
 export default function Profile() {
-  const { user, setUser, api } = useAuth();
-  const [name, setName] = useState("");
+  const { user, setUser } = useAuth();
+  const [name, setName] = useState(user?.name || "");
   const [password, setPassword] = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(
+    user?.avatar ? `${import.meta.env.VITE_API_URL}/uploads/${user.avatar}` : ""
+  );
   const [loading, setLoading] = useState(false);
-  const [savedJobs, setSavedJobs] = useState([]);
-  const [loadingJobs, setLoadingJobs] = useState(true);
 
-  useEffect(() => {
-    if (user?.name) setName(user.name);
-  }, [user]);
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
 
-  useEffect(() => {
-    if (!user) return;
-    const fetchSavedJobs = async () => {
-      try {
-        setLoadingJobs(true);
-        const { data } = await api.get("/users/saved");
-        setSavedJobs(data);
-      } catch {
-        toast.error("Failed to load saved jobs");
-      } finally {
-        setLoadingJobs(false);
-      }
-    };
-    fetchSavedJobs();
-  }, [user, api]);
-
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleSave = async () => {
     try {
-      const { data } = await api.put("/users/profile", {
-        name: name.trim(),
-        password: password.trim() || undefined,
-      });
-      setUser(data.user);
+      setLoading(true);
+      let uploadedAvatar = user?.avatar;
+
+      // Upload avatar if selected
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append("avatar", avatarFile);
+        const res = await axios.post(
+          `${import.meta.env.VITE_API_URL}/api/auth/upload-avatar`,
+          formData,
+          { withCredentials: true }
+        );
+        uploadedAvatar = res.data.filename;
+      }
+
+      // Update profile
+      const updateData = { name };
+      if (password) updateData.password = password;
+      if (uploadedAvatar) updateData.avatar = uploadedAvatar;
+
+      const updateRes = await axios.put(
+        `${import.meta.env.VITE_API_URL}/api/auth/update-profile`,
+        updateData,
+        { withCredentials: true }
+      );
+
+      setUser(updateRes.data.user);
       setPassword("");
-      toast.success("Profile updated successfully!");
+      setLoading(false);
+      alert("✅ Profile updated successfully!");
     } catch (err) {
-      toast.error(err.response?.data?.msg || "Update failed");
-    } finally {
+      console.error(err);
+      alert("❌ Error updating profile.");
       setLoading(false);
     }
   };
 
-  if (!user) {
-    return <div className="p-6 text-center text-gray-600">Loading profile...</div>;
-  }
-
   return (
-    <div className="min-h-screen bg-muted/30">
-      {/* Header */}
-      <div className="relative bg-gradient-to-r from-indigo-600 to-purple-500 h-48 flex items-end px-8 pb-4">
-        <ProfileAvatar />
-        <div className="ml-6 text-white">
-          <h1 className="text-2xl font-bold">{user.name}</h1>
-          <p className="text-white/80">{user.email}</p>
-        </div>
-      </div>
+    <div className="max-w-2xl mx-auto">
+      <Card>
+        <CardHeader>
+          <CardTitle>Account Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Avatar Upload */}
+          <div className="flex items-center gap-4">
+            <Avatar className="w-20 h-20">
+              <AvatarImage src={avatarPreview} />
+              <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
+            </Avatar>
+            <Input type="file" accept="image/*" onChange={handleAvatarChange} />
+          </div>
 
-      {/* Tabs */}
-      <div className="max-w-4xl mx-auto mt-12 p-6 bg-white shadow rounded-xl">
-        <Tabs defaultValue="overview">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="saved">Saved Jobs</TabsTrigger>
-            <TabsTrigger value="applications">Applications</TabsTrigger>
-          </TabsList>
+          {/* Name */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Name</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
 
-          <TabsContent value="overview">
-            <Card className="p-6 space-y-4">
-              <form onSubmit={handleUpdate} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium">Name</label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium">Email</label>
-                  <Input value={user.email} disabled className="bg-muted" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium">New Password</label>
-                  <Input
-                    type="password"
-                    placeholder="Leave blank to keep current"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <Button type="submit" disabled={loading} className="bg-gradient-to-r from-indigo-600 to-purple-500">
-                  {loading ? "Saving..." : "Save Changes"}
-                </Button>
-              </form>
-            </Card>
-          </TabsContent>
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Email</label>
+            <Input value={user?.email} disabled className="bg-gray-100 dark:bg-gray-800" />
+          </div>
 
-          <TabsContent value="saved">
-            {loadingJobs ? (
-              <p className="text-gray-500">Loading saved jobs...</p>
-            ) : savedJobs.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {savedJobs.map((job) => (
-                  <Card key={job._id} className="p-4 hover:shadow-md transition">
-                    <h3 className="font-semibold text-lg">{job.title}</h3>
-                    <p className="text-gray-500">{job.company}</p>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500">No saved jobs yet.</p>
-            )}
-          </TabsContent>
+          {/* Password */}
+          <div>
+            <label className="block text-sm font-medium mb-1">New Password</label>
+            <Input
+              type="password"
+              placeholder="Leave blank to keep current"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+        </CardContent>
 
-          <TabsContent value="applications">
-            <p className="text-gray-500">Applications tracking coming soon...</p>
-          </TabsContent>
-        </Tabs>
-      </div>
+        <CardFooter>
+          <Button className="w-full" onClick={handleSave} disabled={loading}>
+            {loading ? "Saving..." : "Save Changes"}
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

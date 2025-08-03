@@ -1,80 +1,58 @@
-import React, { useState, useContext } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../lib/api";
-import { AuthContext } from "../context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function Login() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(null);
-  const navigate = useNavigate();
-  const { setUser } = useContext(AuthContext);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError(null);
-    console.log("📤 Sending login request:", { email, password });
 
-    try {
-      const cleanedEmail = email.toLowerCase().trim();
-      const res = await api.post("/auth/login", { email: cleanedEmail, password });
-      console.log("✅ Login success:", res.data);
+    // TODO: Replace with real API call
+    const fakeUser = {
+      name: "Temuri",
+      email: email,
+      role: "seeker", // or recruiter
+      avatar: null
+    };
 
-      const { token, user } = res.data;
-      localStorage.setItem("token", token);
-
-      if (user) {
-        setUser(user);
-      } else {
-        try {
-          const meRes = await api.get("/auth/me");
-          setUser(meRes.data.user);
-        } catch (err) {
-          console.error("❌ Failed to fetch user after login", err);
-        }
-      }
-
-      navigate("/dashboard");
-    } catch (err) {
-      console.error("❌ Login error:", err);
-      setError(err.response?.data?.msg || "Login failed");
-    }
+    login(fakeUser);
+    navigate("/dashboard");
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <form
-        onSubmit={handleLogin}
-        className="bg-white p-8 rounded-lg shadow-md w-full max-w-md"
-      >
-        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
-        {error && <p className="mb-4 text-red-500 text-sm text-center">{error}</p>}
-
-        <input
-          type="email"
-          placeholder="Email"
-          className="w-full mb-4 px-4 py-2 border rounded-md"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full mb-6 px-4 py-2 border rounded-md"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-        >
-          Login
-        </button>
-      </form>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Login to Jobwise</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <Input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <Input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <Button type="submit" className="w-full">Login</Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

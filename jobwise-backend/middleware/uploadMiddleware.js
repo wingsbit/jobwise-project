@@ -37,10 +37,8 @@ const fileFilter = (req, file, cb) => {
 };
 
 // Multer upload middleware
-const upload = multer({
+export const upload = multer({
   storage,
   limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
   fileFilter
 });
-
-export default upload;

@@ -1,60 +1,74 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext"; // ✅ use context
+import { useAuth } from "@/context/AuthContext";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
-const Signup = () => {
+export default function Signup() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
   const [name, setName] = useState("");
+  const [role, setRole] = useState("seeker"); // default role
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
-  const { register } = useAuth(); // ✅ call backend through AuthContext
 
-  const handleSubmit = async (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    console.log("📤 Sending signup request:", { name, email, password });
 
-    try {
-      await register(name, email, password);
-      console.log("✅ Signup successful, redirecting to dashboard");
-      navigate("/dashboard");
-    } catch (err) {
-      console.error("❌ Signup error:", err.response?.data || err.message);
-      alert(err.response?.data?.msg || "Signup failed");
-    }
+    // TODO: Replace with real API call
+    const newUser = {
+      name: name,
+      email: email,
+      role: role,
+      avatar: null
+    };
+
+    login(newUser);
+    navigate("/dashboard");
   };
 
   return (
-    <div>
-      <h2>Sign Up</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        /><br />
-
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        /><br />
-
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        /><br />
-
-        <button type="submit">Create Account</button>
-      </form>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Create a Jobwise Account</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSignup} className="space-y-4">
+            <Input
+              placeholder="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+            <select
+              className="w-full border rounded p-2"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="seeker">Job Seeker</option>
+              <option value="recruiter">Recruiter / HR</option>
+            </select>
+            <Input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <Input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <Button type="submit" className="w-full">Sign Up</Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
-};
-
-export default Signup;
+}
