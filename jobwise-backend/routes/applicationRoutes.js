@@ -1,26 +1,21 @@
-// routes/applicationRoutes.js
-const express = require('express');
+// jobwise-backend/routes/applicationRoutes.js
+import express from "express";
+
 const router = express.Router();
-const protect = require('../middleware/authMiddleware');
-const {
-  applyToJob,
-  getMyApplications,
-  getApplicationsForMyJobs,
-} = require('../controllers/applicationController');
 
-// @route   POST /api/applications
-// @desc    Apply to a job
-// @access  Private
-router.post('/', protect, applyToJob);
+/**
+ * GET /api/applications/test
+ * Placeholder applications route
+ */
+router.get("/test", (req, res) => {
+  res.json({
+    message: "Applications route is working!",
+    examples: [
+      "GET /api/applications/test → This message",
+      "Later: POST /api/applications to create an application",
+      "Later: GET /api/applications to list user applications"
+    ]
+  });
+});
 
-// @route   GET /api/applications/my
-// @desc    Get user's applications
-// @access  Private
-router.get('/my', protect, getMyApplications);
-
-// @route   GET /api/applications/employer
-// @desc    Get applications for employer's jobs
-// @access  Private (Employer)
-router.get('/employer', protect, getApplicationsForMyJobs);
-
-module.exports = router;
+export default router;

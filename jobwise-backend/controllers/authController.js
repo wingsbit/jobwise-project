@@ -1,15 +1,16 @@
+// jobwise-backend/controllers/authController.js
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import path from "path";
 import fs from "fs";
+import path from "path";
 import User from "../models/User.js";
 
-// ✅ Generate JWT
+// 🔑 Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
-// ✅ Register user
+// 📌 REGISTER
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -25,32 +26,29 @@ export const registerUser = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new User({
+    const user = await User.create({
       name: name.trim(),
       email: cleanEmail,
       password: hashedPassword,
     });
 
-    await newUser.save();
-    const token = generateToken(newUser._id);
-
     res.status(201).json({
-      token,
+      token: generateToken(user._id),
       user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        avatar: newUser.avatar || null,
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        role: user.role,
       },
     });
-  } catch (err) {
-    console.error("💥 Signup error:", err);
-    res.status(500).json({ msg: "Signup failed internally" });
+  } catch (error) {
+    console.error("💥 Register error:", error);
+    res.status(500).json({ msg: "Server error during registration" });
   }
 };
 
-// ✅ Login user
+// 📌 LOGIN
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -59,9 +57,9 @@ export const loginUser = async (req, res) => {
     }
 
     const cleanEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: cleanEmail });
+    const user = await User.findOne({ email: cleanEmail }).select("+password");
     if (!user) {
-      return res.status(404).json({ msg: "User not found" });
+      return res.status(404).json({ msg: "Invalid credentials" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -69,99 +67,101 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ msg: "Invalid credentials" });
     }
 
-    const token = generateToken(user._id);
-
     res.json({
-      token,
+      token: generateToken(user._id),
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        avatar: user.avatar || null,
+        avatar: user.avatar,
+        role: user.role,
       },
     });
-  } catch (err) {
-    console.error("💥 Login error:", err);
-    res.status(500).json({ msg: "Login failed internally" });
+  } catch (error) {
+    console.error("💥 Login error:", error);
+    res.status(500).json({ msg: "Server error during login" });
   }
 };
 
-// ✅ Logout user
+// 📌 LOGOUT
 export const logoutUser = (req, res) => {
-  res.json({ msg: "Logout successful (client should clear token)" });
+  res.json({ msg: "Logout successful. Remove token from client." });
 };
 
-// ✅ Get current user
+// 📌 GET CURRENT USER
 export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
     res.json({ user });
-  } catch (err) {
-    res.status(500).json({ msg: "Failed to fetch user" });
+  } catch (error) {
+    console.error("💥 GetMe error:", error);
+    res.status(500).json({ msg: "Server error fetching user data" });
   }
 };
 
-// ✅ Upload avatar
+// 📌 UPLOAD AVATAR
 export const uploadAvatar = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ msg: "No file uploaded" });
     }
 
-    const filename = req.file.filename;
-
-    // Remove old avatar if exists
     const user = await User.findById(req.user.id);
-    if (user?.avatar && user.avatar !== filename) {
-      const oldPath = path.join("uploads", user.avatar);
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    // Delete old avatar if exists
+    if (user.avatar) {
+      const oldPath = path.join(process.cwd(), "uploads", user.avatar);
       if (fs.existsSync(oldPath)) {
         fs.unlinkSync(oldPath);
       }
     }
 
-    // Save new avatar in DB
-    user.avatar = filename;
+    // Save new avatar filename
+    user.avatar = req.file.filename;
     await user.save();
 
-    res.json({ filename });
-  } catch (err) {
-    console.error("💥 Avatar upload error:", err);
-    res.status(500).json({ msg: "Failed to upload avatar" });
+    res.json({
+      msg: "Avatar uploaded successfully",
+      filename: req.file.filename,
+    });
+  } catch (error) {
+    console.error("💥 Upload avatar error:", error);
+    res.status(500).json({ msg: "Error uploading avatar" });
   }
 };
 
-// ✅ Update user (name, password, avatar)
+// 📌 UPDATE PROFILE
 export const updateUser = async (req, res) => {
   try {
     const { name, password, avatar } = req.body;
 
-    if (!name && !password && !avatar) {
-      return res.status(400).json({ msg: "Please provide a name, password, or avatar to update" });
-    }
-
     const updates = {};
-    if (name?.trim()) updates.name = name.trim();
-    if (password?.trim()) {
+    if (name) updates.name = name.trim();
+    if (password) {
       if (password.length < 6) {
-        return res.status(400).json({ msg: "Password must be at least 6 characters" });
+        return res
+          .status(400)
+          .json({ msg: "Password must be at least 6 characters" });
       }
       updates.password = await bcrypt.hash(password, 10);
     }
-    if (avatar?.trim()) updates.avatar = avatar.trim();
+    if (avatar) updates.avatar = avatar;
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
       { $set: updates },
       { new: true }
-    ).select("name email avatar");
-
-    if (!updatedUser) {
-      return res.status(404).json({ msg: "User not found" });
-    }
+    ).select("-password");
 
     res.json({ user: updatedUser });
-  } catch (err) {
-    console.error("💥 Update error:", err);
-    res.status(500).json({ msg: "Failed to update user" });
+  } catch (error) {
+    console.error("💥 Update profile error:", error);
+    res.status(500).json({ msg: "Error updating profile" });
   }
 };

@@ -1,10 +1,21 @@
-// routes/advisorRoutes.js
+// jobwise-backend/routes/advisorRoutes.js
+import express from "express";
 
-const express = require('express');
 const router = express.Router();
-const { analyzeQuiz } = require('../controllers/advisorController');
 
-// Public or protected – your call (for MVP, leave open)
-router.post('/analyze', analyzeQuiz);
+/**
+ * GET /api/advisor/suggest
+ * Placeholder for AI career advice
+ */
+router.get("/suggest", (req, res) => {
+  res.json({
+    message: "AI Career Advisor placeholder",
+    suggestions: [
+      "Refine your LinkedIn profile for targeted job searches.",
+      "Enhance your portfolio with measurable achievements.",
+      "Research top companies in your industry for better targeting."
+    ]
+  });
+});
 
-module.exports = router;
+export default router;

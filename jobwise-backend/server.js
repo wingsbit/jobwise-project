@@ -1,34 +1,39 @@
-// server.js
+// jobwise-backend/server.js
 import express from "express";
+import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import mongoose from "mongoose";
-import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import connectDB from "./config/db.js";
 
 // Routes
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import jobRoutes from "./routes/jobRoutes.js";
+import applicationRoutes from "./routes/applicationRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
+import advisorRoutes from "./routes/advisorRoutes.js";
 
 dotenv.config();
+connectDB();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Fix __dirname for ESM
+// Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // =============================
-// CORS CONFIG
+// CORS
 // =============================
 app.use(
   cors({
-    origin: "http://localhost:5173", // Your frontend dev server
+    origin: "http://localhost:5173", // frontend dev server
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"], // ✅ Allows JWT tokens
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -38,23 +43,31 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// Log incoming requests (dev helper)
+// =============================
+// Serve uploaded images
+// =============================
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// =============================
+// Debug requests
+// =============================
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.originalUrl}`);
+  console.log(`📥 ${req.method} ${req.originalUrl}`);
   next();
 });
-
-// Serve static files for uploaded avatars
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // =============================
 // API Routes
 // =============================
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes); // login, register, logout, getMe
+app.use("/api/users", userRoutes); // profile update, avatar upload, saved jobs
+app.use("/api/jobs", jobRoutes);
+app.use("/api/applications", applicationRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/advisor", advisorRoutes);
 
 // =============================
-// Fallback error handler
+// Error handler
 // =============================
 app.use((err, req, res, next) => {
   console.error("💥 Server error:", err.stack);
@@ -62,19 +75,8 @@ app.use((err, req, res, next) => {
 });
 
 // =============================
-// Database connection
+// Start server
 // =============================
-mongoose
-  .connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("✅ MongoDB connected");
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB connection error:", err);
-  });
+app.listen(PORT, () => {
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+});

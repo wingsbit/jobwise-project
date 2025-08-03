@@ -18,7 +18,8 @@ import NotFound from "./pages/NotFound";
 
 // Protects routes for logged-in users only
 function ProtectedRoute({ children }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return <div className="p-6">Loading...</div>;
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }

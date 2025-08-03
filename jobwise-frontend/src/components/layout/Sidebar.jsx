@@ -1,60 +1,49 @@
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
-  const avatarUrl = user?.avatar
-    ? `${import.meta.env.VITE_API_URL}/uploads/${user.avatar}`
-    : null;
+  const navItems = [
+    { label: "Dashboard", path: "/dashboard" },
+    { label: "Profile", path: "/profile" },
+    { label: "Saved Jobs", path: "/saved-jobs" },
+    { label: "Applications", path: "/applications" },
+    { label: "AI Advisor", path: "/ai-advisor" },
+  ];
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-sidebar border-r border-sidebar-border p-4">
-      {/* User Info */}
-      {user && (
-        <div className="flex flex-col items-center mb-6">
-          <Avatar className="w-20 h-20 mb-2">
-            <AvatarImage src={avatarUrl || undefined} className="object-cover" />
-            <AvatarFallback>
-              {user?.name?.charAt(0)?.toUpperCase() || "U"}
-            </AvatarFallback>
-          </Avatar>
-          <p className="font-semibold">{user.name}</p>
-          <p className="text-sm text-muted-foreground">{user.email}</p>
-        </div>
-      )}
+    <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+      {/* Logo */}
+      <div className="p-4 text-2xl font-bold text-primary">Jobwise</div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1 flex-grow">
-        <Link to="/dashboard" className="px-3 py-2 rounded hover:bg-accent hover:text-accent-foreground transition">
-          Dashboard
-        </Link>
-        <Link to="/profile" className="px-3 py-2 rounded hover:bg-accent hover:text-accent-foreground transition">
-          Profile
-        </Link>
-        <Link to="/saved-jobs" className="px-3 py-2 rounded hover:bg-accent hover:text-accent-foreground transition">
-          Saved Jobs
-        </Link>
-        <Link to="/applications" className="px-3 py-2 rounded hover:bg-accent hover:text-accent-foreground transition">
-          Applications
-        </Link>
-        <Link to="/ai-advisor" className="px-3 py-2 rounded hover:bg-accent hover:text-accent-foreground transition">
-          Jobwiser AI Advisor
-        </Link>
+      <nav className="flex-1 space-y-1 px-2">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `block px-4 py-2 rounded-md text-sm font-medium ${
+                isActive
+                  ? "bg-primary text-white"
+                  : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+              }`
+            }
+          >
+            {item.label}
+          </NavLink>
+        ))}
       </nav>
 
-      {/* Logout Button */}
-      <Button onClick={handleLogout} variant="destructive" className="mt-6 w-full">
-        Logout
-      </Button>
+      {/* Logout */}
+      <button
+        onClick={logout}
+        className="flex items-center gap-2 px-4 py-3 m-2 rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-gray-700"
+      >
+        <LogOut size={18} /> Logout
+      </button>
     </aside>
   );
 }

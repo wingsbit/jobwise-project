@@ -1,25 +1,67 @@
 import express from "express";
+import protect from "../middleware/authMiddleware.js";
+import upload from "../middleware/uploadMiddleware.js";
 import {
-  loginUser,
-  registerUser,
-  logoutUser,
-  getMe,
-  updateUser,
-  uploadAvatar
-} from "../controllers/authController.js";
-import { verifyToken } from "../middleware/verifyToken.js";
-import { upload } from "../middleware/uploadMiddleware.js";
+  getProfile,
+  updateProfile,
+  saveJob,
+  getSavedJobs,
+  removeSavedJob,
+} from "../controllers/userController.js";
 
 const router = express.Router();
 
-// Auth
-router.post("/register", registerUser);
-router.post("/login", loginUser);
-router.post("/logout", logoutUser);
+// ==========================
+// Profile Routes
+// ==========================
+router.get("/profile", protect, getProfile);
+router.put("/profile", protect, updateProfile);
 
-// Profile
-router.get("/me", verifyToken, getMe);
-router.put("/update-profile", verifyToken, updateUser); // ✅ match Profile.jsx exactly
-router.post("/upload-avatar", verifyToken, upload.single("avatar"), uploadAvatar); // ✅ avatar upload
+// ==========================
+// Avatar Upload
+// ==========================
+router.post(
+  "/upload-avatar",
+  protect,
+  upload.single("avatar"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ msg: "No file uploaded" });
+      }
+
+      const user = req.user; // ✅ populated by protect middleware
+      if (!user) {
+        return res.status(404).json({ msg: "User not found" });
+      }
+
+      // Save the uploaded avatar filename
+      user.avatar = req.file.filename;
+      await user.save();
+
+      // ✅ Return updated user object
+      res.json({
+        msg: "Profile picture updated!",
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar,
+          role: user.role,
+        },
+      });
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      res.status(500).json({ msg: "Server error" });
+    }
+  }
+);
+
+// ==========================
+// Saved Jobs
+// ==========================
+router.post("/save/:jobId", protect, saveJob);
+router.get("/saved", protect, getSavedJobs);
+router.delete("/saved/:jobId", protect, removeSavedJob);
 
 export default router;

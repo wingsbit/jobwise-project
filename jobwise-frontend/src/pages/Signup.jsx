@@ -1,74 +1,69 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import axios from "axios";
 
 export default function Signup() {
-  const { login } = useAuth();
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [name, setName] = useState("");
-  const [role, setRole] = useState("seeker"); // default role
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    try {
+      setLoading(true);
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/auth/register`,
+        { name, email, password },
+        { withCredentials: true }
+      );
 
-    // TODO: Replace with real API call
-    const newUser = {
-      name: name,
-      email: email,
-      role: role,
-      avatar: null
-    };
-
-    login(newUser);
-    navigate("/dashboard");
+      localStorage.setItem("token", res.data.token);
+      login(res.data.token, res.data.user);
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("❌ Signup error:", err.response?.data || err.message);
+      alert(err.response?.data?.msg || "Signup failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Create a Jobwise Account</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignup} className="space-y-4">
-            <Input
-              placeholder="Full Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-            <select
-              className="w-full border rounded p-2"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-            >
-              <option value="seeker">Job Seeker</option>
-              <option value="recruiter">Recruiter / HR</option>
-            </select>
-            <Input
-              type="email"
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <Button type="submit" className="w-full">Sign Up</Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="max-w-md mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">Sign Up</h1>
+      <form onSubmit={handleSignup} className="space-y-4">
+        <Input
+          type="text"
+          placeholder="Full Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
+        <Input
+          type="email"
+          placeholder="Email Address"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <Input
+          type="password"
+          placeholder="Password (min 6 chars)"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Signing up..." : "Sign Up"}
+        </Button>
+      </form>
     </div>
   );
 }

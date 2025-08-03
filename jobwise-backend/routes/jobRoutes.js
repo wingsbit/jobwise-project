@@ -1,12 +1,20 @@
-const express = require('express');
+// jobwise-backend/routes/jobRoutes.js
+import express from "express";
+
 const router = express.Router();
-const { createJob, getAllJobs } = require('../controllers/jobController');
-const protect = require('../middleware/authMiddleware');
 
-// Public: Get jobs
-router.get('/', getAllJobs);
+/**
+ * GET /api/jobs/test
+ * Example job route
+ */
+router.get("/test", (req, res) => {
+  res.json({
+    message: "Jobs route is working!",
+    examples: [
+      "Later: GET /api/jobs to list all jobs",
+      "Later: POST /api/jobs to create a new job post"
+    ]
+  });
+});
 
-// Protected: Post job
-router.post('/', protect, createJob);
-
-module.exports = router;
+export default router;

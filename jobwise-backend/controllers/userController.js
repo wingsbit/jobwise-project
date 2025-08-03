@@ -1,22 +1,17 @@
-// controllers/userController.js
+// jobwise-backend/controllers/userController.js
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 
 // ==========================
-// @desc    Get user profile
-// @route   GET /api/users/profile
-// @access  Private
+// Get user profile
+// GET /api/users/profile
 // ==========================
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.json({
-      message: "Profile fetched successfully",
-      user
-    });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({ message: "Profile fetched successfully", user });
   } catch (error) {
     console.error("Profile fetch error:", error);
     res.status(500).json({ message: "Failed to fetch profile", error: error.message });
@@ -24,32 +19,35 @@ export const getProfile = async (req, res) => {
 };
 
 // ==========================
-// @desc    Update user profile
-// @route   PUT /api/users/profile
-// @access  Private
+// Update user profile
+// PUT /api/users/update-profile
 // ==========================
-export const updateProfile = async (req, res) => {
+export const updateUser = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, avatar } = req.body;
 
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (name && name.trim()) user.name = name.trim();
-    if (email && email.trim()) user.email = email.trim().toLowerCase();
+    if (name?.trim()) user.name = name.trim();
+    if (email?.trim()) user.email = email.trim().toLowerCase();
 
     const allowedRoles = ["seeker", "employer"];
     if (role && allowedRoles.includes(role)) user.role = role;
 
-    if (password && password.trim()) {
+    if (password?.trim()) {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(password.trim(), salt);
+    }
+
+    if (avatar) {
+      user.avatar = avatar; // filename only, upload handled separately
     }
 
     const updatedUser = await user.save();
 
     res.json({
-      message: "Profile updated",
+      message: "Profile updated successfully",
       user: {
         id: updatedUser._id,
         name: updatedUser.name,
@@ -59,14 +57,14 @@ export const updateProfile = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Update profile error:", error);
     res.status(500).json({ message: "Update failed", error: error.message });
   }
 };
 
 // ==========================
-// @desc    Save a job to favorites
-// @route   POST /api/users/save/:jobId
-// @access  Private
+// Save a job to favorites
+// POST /api/users/save/:jobId
 // ==========================
 export const saveJob = async (req, res) => {
   try {
@@ -81,14 +79,14 @@ export const saveJob = async (req, res) => {
 
     res.json({ message: "Job saved" });
   } catch (error) {
+    console.error("Save job error:", error);
     res.status(500).json({ message: "Failed to save job", error: error.message });
   }
 };
 
 // ==========================
-// @desc    Get saved jobs
-// @route   GET /api/users/saved
-// @access  Private
+// Get saved jobs
+// GET /api/users/saved
 // ==========================
 export const getSavedJobs = async (req, res) => {
   try {
@@ -97,14 +95,14 @@ export const getSavedJobs = async (req, res) => {
 
     res.json(user.savedJobs);
   } catch (error) {
+    console.error("Get saved jobs error:", error);
     res.status(500).json({ message: "Failed to get saved jobs", error: error.message });
   }
 };
 
 // ==========================
-// @desc    Remove a saved job
-// @route   DELETE /api/users/saved/:jobId
-// @access  Private
+// Remove a saved job
+// DELETE /api/users/saved/:jobId
 // ==========================
 export const removeSavedJob = async (req, res) => {
   try {
@@ -117,6 +115,7 @@ export const removeSavedJob = async (req, res) => {
 
     res.json({ message: "Job removed from saved list" });
   } catch (error) {
+    console.error("Remove saved job error:", error);
     res.status(500).json({ message: "Failed to remove saved job", error: error.message });
   }
 };

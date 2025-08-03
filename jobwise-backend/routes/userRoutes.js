@@ -1,28 +1,27 @@
+// jobwise-backend/routes/userRoutes.js
 import express from "express";
-import protect from "../middleware/authMiddleware.js";
+import { verifyToken } from "../middleware/verifyToken.js";
 import upload from "../middleware/uploadMiddleware.js";
 import {
-  getProfile,
-  updateProfile,
+  updateUser,
   saveJob,
   getSavedJobs,
-  removeSavedJob,
+  removeSavedJob
 } from "../controllers/userController.js";
 
 const router = express.Router();
 
 // ==========================
-// Profile Routes
+// Update Profile (name, password, avatar filename)
 // ==========================
-router.get("/profile", protect, getProfile);
-router.put("/profile", protect, updateProfile);
+router.put("/update-profile", verifyToken, updateUser);
 
 // ==========================
 // Avatar Upload
 // ==========================
 router.post(
   "/upload-avatar",
-  protect,
+  verifyToken,
   upload.single("avatar"),
   async (req, res) => {
     try {
@@ -30,25 +29,18 @@ router.post(
         return res.status(400).json({ msg: "No file uploaded" });
       }
 
-      const user = req.user; // ✅ populated by protect middleware
+      const user = req.user;
       if (!user) {
         return res.status(404).json({ msg: "User not found" });
       }
 
-      // Save the uploaded avatar filename
+      // Save avatar filename in user model
       user.avatar = req.file.filename;
       await user.save();
 
-      // ✅ Return updated user object
       res.json({
-        msg: "Profile picture updated!",
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          avatar: user.avatar,
-          role: user.role,
-        },
+        msg: "Profile picture updated successfully!",
+        avatar: user.avatar
       });
     } catch (error) {
       console.error("Avatar upload error:", error);
@@ -60,8 +52,8 @@ router.post(
 // ==========================
 // Saved Jobs
 // ==========================
-router.post("/save/:jobId", protect, saveJob);
-router.get("/saved", protect, getSavedJobs);
-router.delete("/saved/:jobId", protect, removeSavedJob);
+router.post("/save/:jobId", verifyToken, saveJob);
+router.get("/saved", verifyToken, getSavedJobs);
+router.delete("/saved/:jobId", verifyToken, removeSavedJob);
 
 export default router;
