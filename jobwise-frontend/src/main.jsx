@@ -1,10 +1,12 @@
+// src/main.jsx
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import "./index.css"; // ✅ TailwindCSS styles
+import App from "./App.jsx";
+import "./index.css";
 
-import { AuthProvider } from "@/context/AuthContext";
-import App from "./App.jsx"; // ✅ Your existing routing file
+// Auth Context
+import { AuthProvider } from "@/context/AuthContext.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

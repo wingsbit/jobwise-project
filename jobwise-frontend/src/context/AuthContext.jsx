@@ -7,42 +7,90 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUser = async () => {
-    try {
-      const res = await api.get("/api/auth/me");
-      setUser(res.data.user);
-    } catch {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Global saved jobs state
+  const [savedJobs, setSavedJobs] = useState([]);
+  const [savedJobsLoading, setSavedJobsLoading] = useState(false);
 
+  // Fetch current user on mount
   useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+        const res = await api.get("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setUser(res.data);
+        fetchSavedJobs();
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchUser();
   }, []);
 
-  const login = async (email, password) => {
-    const res = await api.post("/api/auth/login", { email, password });
-    localStorage.setItem("token", res.data.token);
-    setUser(res.data.user);
-    return res.data;
+  // Fetch saved jobs globally
+  const fetchSavedJobs = async () => {
+    if (!user) return;
+    try {
+      setSavedJobsLoading(true);
+      const res = await api.get("/api/jobs/saved", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        withCredentials: true,
+      });
+      setSavedJobs(res.data.map((job) => job._id));
+    } catch (error) {
+      console.error("Error fetching saved jobs:", error);
+    } finally {
+      setSavedJobsLoading(false);
+    }
   };
 
-  const signup = async (name, email, password, role) => {
-    const res = await api.post("/api/auth/signup", { name, email, password, role });
-    localStorage.setItem("token", res.data.token);
-    setUser(res.data.user);
-    return res.data;
-  };
-
-  const logout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
+  // Toggle save/unsave job globally
+  const toggleSaveJob = async (jobId) => {
+    try {
+      if (savedJobs.includes(jobId)) {
+        // Unsave
+        await api.delete(`/api/jobs/saved/${jobId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          withCredentials: true,
+        });
+        setSavedJobs((prev) => prev.filter((id) => id !== jobId));
+      } else {
+        // Save
+        await api.post(
+          `/api/jobs/save/${jobId}`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+            withCredentials: true,
+          }
+        );
+        setSavedJobs((prev) => [...prev, jobId]);
+      }
+    } catch (error) {
+      console.error("Error toggling save job:", error);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, setUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        setUser,
+        loading,
+        savedJobs,
+        savedJobsLoading,
+        fetchSavedJobs,
+        toggleSaveJob,
+        setSavedJobs, // allow manual update from components
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
