@@ -1,20 +1,15 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
-const jobSchema = new mongoose.Schema({
-  title: String,
-  company: String,
-  location: String,
-  description: String,
-  postedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+const jobSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    description: { type: String, required: true },
+    location: { type: String, required: true },
+    salary: { type: String },
+    skills: [String],
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   },
-  applications: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Application',
-    },
-  ],
-}, { timestamps: true });
+  { timestamps: true }
+);
 
-module.exports = mongoose.model('Job', jobSchema);
+export default mongoose.model("Job", jobSchema);

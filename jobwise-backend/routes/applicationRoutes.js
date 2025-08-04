@@ -1,21 +1,19 @@
-// jobwise-backend/routes/applicationRoutes.js
 import express from "express";
+import { verifyToken } from "../middleware/verifyToken.js";
+import { checkRole } from "../middleware/roleMiddleware.js";
+import {
+  applyForJob,
+  getMyApplications,
+  getApplicantsForJob,
+} from "../controllers/applicationController.js";
 
 const router = express.Router();
 
-/**
- * GET /api/applications/test
- * Placeholder applications route
- */
-router.get("/test", (req, res) => {
-  res.json({
-    message: "Applications route is working!",
-    examples: [
-      "GET /api/applications/test → This message",
-      "Later: POST /api/applications to create an application",
-      "Later: GET /api/applications to list user applications"
-    ]
-  });
-});
+// Seeker routes
+router.post("/", verifyToken, checkRole(["seeker"]), applyForJob);
+router.get("/mine", verifyToken, checkRole(["seeker"]), getMyApplications);
+
+// Recruiter route - view applicants for a specific job
+router.get("/job/:id", verifyToken, checkRole(["recruiter"]), getApplicantsForJob);
 
 export default router;

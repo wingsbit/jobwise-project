@@ -1,21 +1,10 @@
-// jobwise-backend/routes/advisorRoutes.js
+// routes/advisorRoutes.js
 import express from "express";
+import { verifyToken } from "../middleware/verifyToken.js";
+import { analyzeCareer } from "../controllers/advisorController.js";
 
 const router = express.Router();
 
-/**
- * GET /api/advisor/suggest
- * Placeholder for AI career advice
- */
-router.get("/suggest", (req, res) => {
-  res.json({
-    message: "AI Career Advisor placeholder",
-    suggestions: [
-      "Refine your LinkedIn profile for targeted job searches.",
-      "Enhance your portfolio with measurable achievements.",
-      "Research top companies in your industry for better targeting."
-    ]
-  });
-});
+router.post("/analyze", verifyToken, analyzeCareer);
 
 export default router;

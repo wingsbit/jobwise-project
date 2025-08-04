@@ -1,72 +1,64 @@
-const Application = require('../models/Application');
-const Job = require('../models/Job');
+import Application from "../models/Application.js";
+import Job from "../models/Job.js";
 
-// @desc    Apply to a job
-// @route   POST /api/applications
-// @access  Private
-exports.applyToJob = async (req, res) => {
+// @desc Apply for a job (Seeker)
+export const applyForJob = async (req, res, next) => {
   try {
-    const { jobId, message } = req.body;
+    const { jobId, coverLetter } = req.body;
 
-    const alreadyApplied = await Application.findOne({
+    const job = await Job.findById(jobId);
+    if (!job) return res.status(404).json({ msg: "Job not found" });
+
+    const existingApp = await Application.findOne({
       job: jobId,
       applicant: req.user._id,
     });
-
-    if (alreadyApplied) {
-      return res.status(400).json({ message: 'Already applied to this job' });
-    }
+    if (existingApp)
+      return res.status(400).json({ msg: "You already applied for this job" });
 
     const application = await Application.create({
       job: jobId,
       applicant: req.user._id,
-      message,
+      coverLetter,
     });
 
-    // Optionally push to job.applications (if added in model)
-    const job = await Job.findById(jobId);
-    if (job) {
-      job.applications.push(application._id);
-      await job.save();
-    }
-
-    res.status(201).json({
-      message: 'Application submitted',
-      application,
-    });
+    res.status(201).json({ msg: "Application submitted", application });
   } catch (error) {
-    res.status(500).json({ message: 'Application failed', error: error.message });
+    next(error);
   }
 };
 
-// @desc    Get applications by logged-in user
-// @route   GET /api/applications/my
-// @access  Private
-exports.getMyApplications = async (req, res) => {
+// @desc Get applications for logged in seeker
+export const getMyApplications = async (req, res, next) => {
   try {
     const applications = await Application.find({ applicant: req.user._id })
-      .populate('job', 'title company location');
+      .populate("job", "title location")
+      .sort({ createdAt: -1 });
 
     res.status(200).json(applications);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch applications', error: error.message });
+    next(error);
   }
 };
 
-// @desc    Get applicants for employer's jobs
-// @route   GET /api/applications/employer
-// @access  Private (Employer only)
-exports.getApplicationsForMyJobs = async (req, res) => {
+// @desc Get all applicants for a job (Recruiter)
+export const getApplicantsForJob = async (req, res, next) => {
   try {
-    const jobs = await Job.find({ postedBy: req.user._id }).select('_id');
-    const jobIds = jobs.map((job) => job._id);
+    const jobId = req.params.id;
 
-    const applications = await Application.find({ job: { $in: jobIds } })
-      .populate('applicant', 'name email')
-      .populate('job', 'title');
+    // Check if job exists and belongs to this recruiter
+    const job = await Job.findById(jobId);
+    if (!job) return res.status(404).json({ msg: "Job not found" });
+    if (job.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ msg: "Not authorized to view applicants for this job" });
+    }
+
+    const applications = await Application.find({ job: jobId })
+      .populate("applicant", "name email")
+      .sort({ createdAt: -1 });
 
     res.status(200).json(applications);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch job applications', error: error.message });
+    next(error);
   }
 };

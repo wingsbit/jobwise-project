@@ -1,88 +1,114 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import JobCard from "@/components/job/JobCard";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Briefcase, FileText, Save, Bot } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const [jobs, setJobs] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const quickLinks = [
-    {
-      title: "View Applications",
-      icon: FileText,
-      path: "/applications",
-      color: "text-blue-500",
-    },
-    {
-      title: "Saved Jobs",
-      icon: Save,
-      path: "/saved-jobs",
-      color: "text-green-500",
-    },
-    {
-      title: "AI Career Advisor",
-      icon: Bot,
-      path: "/ai-advisor",
-      color: "text-purple-500",
-    },
-    {
-      title: "Search Jobs",
-      icon: Briefcase,
-      path: "/dashboard", // Replace later with job search page
-      color: "text-orange-500",
-    },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const jobsRes = await api.get("/api/jobs");
+        setJobs(jobsRes.data.slice(0, 5));
+
+        const appsRes = await api.get("/api/applications/mine");
+        setApplications(appsRes.data.slice(0, 5));
+      } catch (error) {
+        console.error("Dashboard fetch error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) return <div className="p-6">Loading dashboard...</div>;
 
   return (
-    <div className="space-y-6">
-      {/* Welcome */}
+    <div className="max-w-6xl mx-auto p-6 space-y-8">
+      <h1 className="text-2xl font-bold">Welcome, {user?.name} 👋</h1>
+
+      {/* AI Advisor Shortcut */}
+      <Card className="bg-blue-50 border-blue-100">
+        <CardHeader>
+          <CardTitle>Need career advice?</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <p className="text-sm text-gray-600">
+            Use Jobwiser AI to analyze your skills and get tailored job suggestions.
+          </p>
+          <Link to="/advisor">
+            <Button>Go to AI Advisor</Button>
+          </Link>
+        </CardContent>
+      </Card>
+
+      {/* Recruiter Quick Actions */}
+      {user?.role === "recruiter" && (
+        <div className="flex flex-wrap gap-3">
+          <Link to="/jobs/new">
+            <Button variant="default">+ Post a Job</Button>
+          </Link>
+          <Link to="/my-jobs">
+            <Button variant="secondary">Manage My Jobs</Button>
+          </Link>
+        </div>
+      )}
+
+      {/* Latest Jobs */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-          Welcome back, {user?.name || "User"} 👋
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Here’s your career overview and quick actions.
-        </p>
+        <h2 className="text-xl font-semibold mb-4">Latest Job Matches</h2>
+        {jobs.length === 0 ? (
+          <p>No jobs found.</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {jobs.map((job) => (
+              <JobCard key={job._id} job={job} />
+            ))}
+          </div>
+        )}
+        <Link
+          to="/jobs"
+          className="inline-block mt-4 text-sm text-blue-600 hover:underline"
+        >
+          View all jobs →
+        </Link>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {quickLinks.map((link, index) => (
-          <Card
-            key={index}
-            className="cursor-pointer hover:shadow-lg transition"
-            onClick={() => navigate(link.path)}
+      {/* My Applications */}
+      {user?.role === "seeker" && (
+        <div>
+          <h2 className="text-xl font-semibold mb-4">My Recent Applications</h2>
+          {applications.length === 0 ? (
+            <p>You haven't applied for any jobs yet.</p>
+          ) : (
+            <ul className="space-y-3">
+              {applications.map((app) => (
+                <li key={app._id} className="border p-3 rounded shadow-sm">
+                  <h3 className="font-bold">{app.job?.title}</h3>
+                  <p className="text-gray-600">{app.job?.location}</p>
+                  <p className="text-xs text-gray-500">
+                    Applied on {new Date(app.createdAt).toLocaleDateString()}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link
+            to="/applications"
+            className="inline-block mt-3 text-sm text-blue-600 hover:underline"
           >
-            <CardHeader className="flex flex-row items-center gap-3">
-              <link.icon className={`w-6 h-6 ${link.color}`} />
-              <CardTitle className="text-lg">{link.title}</CardTitle>
-            </CardHeader>
-          </Card>
-        ))}
-      </div>
-
-      {/* Stats Overview (placeholder for now) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Applications Sent</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">12</CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Interviews Scheduled</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">3</CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Offers Received</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-bold">1</CardContent>
-        </Card>
-      </div>
+            View all applications →
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

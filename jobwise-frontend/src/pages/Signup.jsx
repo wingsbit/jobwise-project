@@ -1,68 +1,68 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import axios from "axios";
 
 export default function Signup() {
+  const { signup } = useAuth();
   const navigate = useNavigate();
-  const { login } = useAuth();
-
   const [name, setName] = useState("");
+  const [role, setRole] = useState("seeker");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSignup = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     try {
-      setLoading(true);
-      const res = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/auth/register`,
-        { name, email, password },
-        { withCredentials: true }
-      );
-
-      localStorage.setItem("token", res.data.token);
-      login(res.data.token, res.data.user);
+      await signup(name, email, password, role);
       navigate("/dashboard");
     } catch (err) {
-      console.error("❌ Signup error:", err.response?.data || err.message);
-      alert(err.response?.data?.msg || "Signup failed");
-    } finally {
-      setLoading(false);
+      setError(err.response?.data?.msg || "Signup failed");
     }
   };
 
   return (
-    <div className="max-w-md mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Sign Up</h1>
-      <form onSubmit={handleSignup} className="space-y-4">
-        <Input
+    <div className="p-6 max-w-md mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Sign Up</h1>
+      {error && <p className="text-red-500 mb-2">{error}</p>}
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <input
           type="text"
-          placeholder="Full Name"
+          placeholder="Name"
+          className="w-full border p-2 rounded"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          required
         />
-        <Input
+
+        <input
           type="email"
-          placeholder="Email Address"
+          placeholder="Email"
+          className="w-full border p-2 rounded"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          required
         />
-        <Input
+
+        <input
           type="password"
-          placeholder="Password (min 6 chars)"
+          placeholder="Password"
+          className="w-full border p-2 rounded"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required
         />
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Signing up..." : "Sign Up"}
-        </Button>
+
+        <select
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          className="w-full border p-2 rounded"
+        >
+          <option value="seeker">Job Seeker</option>
+          <option value="recruiter">Recruiter</option>
+        </select>
+
+        <button type="submit" className="w-full bg-green-600 text-white py-2 rounded">
+          Sign Up
+        </button>
       </form>
     </div>
   );

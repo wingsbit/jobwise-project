@@ -1,47 +1,85 @@
-// jobwise-frontend/src/App.jsx
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./context/AuthContext";
-import AppShell from "./components/layout/AppShell";
-
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Dashboard from "./pages/Dashboard";
-import Profile from "./pages/Profile";
-import SavedJobs from "./pages/SavedJobs";
-import Applications from "./pages/Applications";
-import AIAdvisor from "./pages/AIAdvisor";
-
-function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="p-6">Loading...</div>;
-  return user ? children : <Navigate to="/login" replace />;
-}
+import { Routes, Route } from "react-router-dom";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import Dashboard from "@/pages/Dashboard";
+import Jobs from "@/pages/Jobs";
+import JobDetails from "@/pages/JobDetails";
+import MyApplications from "@/pages/MyApplications";
+import AIAdvisor from "@/pages/AIAdvisor";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
+import PostJob from "@/pages/PostJob";
+import MyJobs from "@/pages/MyJobs";
+import EditJob from "@/pages/EditJob";
+import Applicants from "@/pages/Applicants";
 
 export default function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Auth */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+    <Routes>
+      {/* Public routes */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/jobs" element={<Jobs />} />
+      <Route path="/jobs/:id" element={<JobDetails />} />
 
-        {/* Protected */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <AppShell />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="/dashboard" />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="saved-jobs" element={<SavedJobs />} />
-          <Route path="applications" element={<Applications />} />
-          <Route path="ai-advisor" element={<AIAdvisor />} />
-        </Route>
-      </Routes>
-    </Router>
+      {/* Protected routes */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/applications"
+        element={
+          <ProtectedRoute>
+            <MyApplications />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/advisor"
+        element={
+          <ProtectedRoute>
+            <AIAdvisor />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Recruiter routes */}
+      <Route
+        path="/jobs/new"
+        element={
+          <ProtectedRoute>
+            <PostJob />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-jobs"
+        element={
+          <ProtectedRoute>
+            <MyJobs />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/jobs/edit/:id"
+        element={
+          <ProtectedRoute>
+            <EditJob />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/jobs/:id/applicants"
+        element={
+          <ProtectedRoute>
+            <Applicants />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   );
 }
