@@ -48,9 +48,8 @@ export const getRecommendedJobs = async (req, res, next) => {
       return res.status(403).json({ msg: "Only job seekers can get recommendations" });
     }
 
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user._id).select("skills");
 
-    // ✅ No skills → tell frontend to show Add Skills card
     if (!user.skills || user.skills.length === 0) {
       return res.status(200).json({
         missingSkills: true,
@@ -58,21 +57,18 @@ export const getRecommendedJobs = async (req, res, next) => {
       });
     }
 
-    // Match jobs by skills
-    let query = {
-      skills: { $in: user.skills.map(skill => new RegExp(skill, "i")) },
-    };
+    const skillRegexArray = user.skills.map(skill => new RegExp(skill, "i"));
+    let query = { skills: { $in: skillRegexArray } };
 
     let jobs = await Job.find(query)
       .sort({ createdAt: -1 })
-      .limit(3)
+      .limit(6)
       .populate("createdBy", "name email");
 
-    // No matches → fallback to latest jobs
     if (!jobs.length) {
       jobs = await Job.find()
         .sort({ createdAt: -1 })
-        .limit(3)
+        .limit(6)
         .populate("createdBy", "name email");
     }
 
@@ -81,6 +77,7 @@ export const getRecommendedJobs = async (req, res, next) => {
       jobs,
     });
   } catch (error) {
+    console.error("❌ Error fetching recommended jobs:", error);
     next(error);
   }
 };

@@ -93,36 +93,57 @@ export default function Navbar() {
                     className="w-10 h-10 rounded-full border cursor-pointer"
                   />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent
+                  align="end"
+                  className="w-48 bg-white/95 backdrop-blur-md shadow-lg rounded-lg border border-gray-100 overflow-hidden animate-dropdown-fade"
+                >
                   {isJobSeeker && (
                     <>
-                      <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                      <DropdownMenuItem
+                        onClick={() => navigate("/dashboard")}
+                        className="px-4 py-2 hover:bg-blue-50 transition-colors"
+                      >
                         Dashboard
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/applications")}>
+                      <DropdownMenuItem
+                        onClick={() => navigate("/applications")}
+                        className="px-4 py-2 hover:bg-blue-50 transition-colors"
+                      >
                         My Applications
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/saved-jobs")}>
+                      <DropdownMenuItem
+                        onClick={() => navigate("/saved-jobs")}
+                        className="px-4 py-2 hover:bg-blue-50 transition-colors"
+                      >
                         Saved Jobs
                       </DropdownMenuItem>
                     </>
                   )}
                   {isRecruiter && (
                     <>
-                      <DropdownMenuItem onClick={() => navigate("/my-jobs")}>
+                      <DropdownMenuItem
+                        onClick={() => navigate("/my-jobs")}
+                        className="px-4 py-2 hover:bg-blue-50 transition-colors"
+                      >
                         My Jobs
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/jobs/new")}>
+                      <DropdownMenuItem
+                        onClick={() => navigate("/jobs/new")}
+                        className="px-4 py-2 hover:bg-blue-50 transition-colors"
+                      >
                         Post a Job
                       </DropdownMenuItem>
                     </>
                   )}
-                  <DropdownMenuItem onClick={() => navigate("/profile")}>
+                  <DropdownMenuItem
+                    onClick={() => navigate("/profile")}
+                    className="px-4 py-2 hover:bg-blue-50 transition-colors"
+                  >
                     Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="text-red-600"
+                    className="px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
                   >
                     Logout
                   </DropdownMenuItem>
@@ -204,7 +225,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Custom Smooth Glow Animation */}
+      {/* Custom Animations */}
       <style>{`
         @keyframes smoothGlow {
           0%, 95%, 100% {
@@ -218,6 +239,21 @@ export default function Navbar() {
         }
         .animate-smooth-glow {
           animation: smoothGlow 5s infinite ease-in-out;
+        }
+
+        /* Dropdown fade in */
+        @keyframes dropdownFade {
+          0% {
+            opacity: 0;
+            transform: translateY(-5px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-dropdown-fade {
+          animation: dropdownFade 0.2s ease-out;
         }
       `}</style>
     </header>
