@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,19 @@ import { Button } from "@/components/ui/button";
 export default function MyJobs() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  // ✅ Redirect jobseekers to dashboard
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        navigate("/login");
+      } else if (user.role !== "recruiter") {
+        navigate("/dashboard");
+      }
+    }
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     const fetchMyJobs = async () => {
@@ -19,8 +33,11 @@ export default function MyJobs() {
         setLoading(false);
       }
     };
-    fetchMyJobs();
-  }, []);
+
+    if (user?.role === "recruiter") {
+      fetchMyJobs();
+    }
+  }, [user]);
 
   const handleDelete = async (id) => {
     try {
@@ -31,7 +48,7 @@ export default function MyJobs() {
     }
   };
 
-  if (loading) return <div className="p-6">Loading your jobs...</div>;
+  if (loading || authLoading) return <div className="p-6">Loading your jobs...</div>;
 
   return (
     <div className="max-w-5xl mx-auto p-6">

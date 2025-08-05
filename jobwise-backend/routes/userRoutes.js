@@ -6,6 +6,7 @@ import upload from "../middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
-router.put("/update", verifyToken, upload.single("avatar"), updateUser);
+// Update own profile
+router.patch("/me", verifyToken, upload.single("avatar"), updateUser);
 
 export default router;

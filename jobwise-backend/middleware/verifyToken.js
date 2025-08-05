@@ -17,6 +17,9 @@ export const verifyToken = async (req, res, next) => {
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Attach both userId and user object for convenience
+    req.userId = decoded.id;
     req.user = await User.findById(decoded.id).select("-password");
 
     if (!req.user) {

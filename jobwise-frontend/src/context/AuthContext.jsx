@@ -7,11 +7,10 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Global saved jobs state
   const [savedJobs, setSavedJobs] = useState([]);
   const [savedJobsLoading, setSavedJobsLoading] = useState(false);
 
-  // Fetch current user on mount
+  // Fetch current user on page refresh
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -20,13 +19,12 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
           return;
         }
-        const res = await api.get("/api/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await api.get("/auth/me");
         setUser(res.data);
-        fetchSavedJobs();
+        fetchSavedJobs(res.data);
       } catch (error) {
         console.error("Error fetching user:", error);
+        localStorage.removeItem("token");
       } finally {
         setLoading(false);
       }
@@ -34,15 +32,11 @@ export const AuthProvider = ({ children }) => {
     fetchUser();
   }, []);
 
-  // Fetch saved jobs globally
-  const fetchSavedJobs = async () => {
-    if (!user) return;
+  const fetchSavedJobs = async (currentUser = user) => {
+    if (!currentUser) return;
     try {
       setSavedJobsLoading(true);
-      const res = await api.get("/api/jobs/saved", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        withCredentials: true,
-      });
+      const res = await api.get("/jobs/saved");
       setSavedJobs(res.data.map((job) => job._id));
     } catch (error) {
       console.error("Error fetching saved jobs:", error);
@@ -51,26 +45,37 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Toggle save/unsave job globally
+  // ✅ Login with avatar + role persistence
+  const login = async (email, password) => {
+    const res = await api.post("/auth/login", { email, password });
+    localStorage.setItem("token", res.data.token);
+    setUser(res.data.user); // includes avatar + role
+    await fetchSavedJobs(res.data.user);
+    return res.data.user;
+  };
+
+  // ✅ Signup with avatar + role persistence
+  const signup = async (name, email, password, role) => {
+    const res = await api.post("/auth/register", { name, email, password, role });
+    localStorage.setItem("token", res.data.token);
+    setUser(res.data.user); // includes avatar + role
+    await fetchSavedJobs(res.data.user);
+    return res.data.user;
+  };
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+    setSavedJobs([]);
+  };
+
   const toggleSaveJob = async (jobId) => {
     try {
       if (savedJobs.includes(jobId)) {
-        // Unsave
-        await api.delete(`/api/jobs/saved/${jobId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-          withCredentials: true,
-        });
+        await api.delete(`/jobs/saved/${jobId}`);
         setSavedJobs((prev) => prev.filter((id) => id !== jobId));
       } else {
-        // Save
-        await api.post(
-          `/api/jobs/save/${jobId}`,
-          {},
-          {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-            withCredentials: true,
-          }
-        );
+        await api.post(`/jobs/save/${jobId}`);
         setSavedJobs((prev) => [...prev, jobId]);
       }
     } catch (error) {
@@ -86,9 +91,12 @@ export const AuthProvider = ({ children }) => {
         loading,
         savedJobs,
         savedJobsLoading,
+        login,
+        signup,
+        logout,
         fetchSavedJobs,
         toggleSaveJob,
-        setSavedJobs, // allow manual update from components
+        setSavedJobs,
       }}
     >
       {children}

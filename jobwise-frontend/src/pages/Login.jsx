@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 export default function Login() {
@@ -8,17 +7,21 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { setUser } = useAuth();
+  const { login } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
 
     try {
-      const res = await api.post("/auth/login", { email, password });
-      localStorage.setItem("token", res.data.token);
-      setUser(res.data.user);
-      navigate("/dashboard");
+      const loggedInUser = await login(email, password);
+
+      // ✅ Role-based redirect
+      if (loggedInUser.role === "recruiter") {
+        navigate("/my-jobs");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError(err.response?.data?.msg || "Login failed");
     }
@@ -35,6 +38,7 @@ export default function Login() {
           className="w-full border p-2 rounded"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
         <input
           type="password"
@@ -42,6 +46,7 @@ export default function Login() {
           className="w-full border p-2 rounded"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
         <button
           type="submit"

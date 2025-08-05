@@ -22,13 +22,18 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ msg: "Email already registered" });
     }
 
+    // ✅ Validate and sanitize role
+    const allowedRoles = ["jobseeker", "recruiter"];
+    const finalRole = allowedRoles.includes(role) ? role : "jobseeker";
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
-      role: role || "seeker",
+      role: finalRole,
+      avatar: null,
     });
 
     res.status(201).json({
@@ -38,6 +43,7 @@ export const registerUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatar: user.avatar || null,
       },
     });
   } catch (error) {
@@ -65,6 +71,7 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ msg: "Invalid email or password" });
     }
 
+    // ✅ Response shape matches registerUser
     res.json({
       token: generateToken(user._id),
       user: {
@@ -72,6 +79,7 @@ export const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        avatar: user.avatar || null,
       },
     });
   } catch (error) {

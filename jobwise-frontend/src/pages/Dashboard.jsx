@@ -1,11 +1,45 @@
+import { useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Briefcase, Bookmark, Bot, FileText, PlusCircle, Users } from "lucide-react";
+import {
+  Briefcase,
+  Bookmark,
+  Bot,
+  FileText,
+  PlusCircle,
+  Users,
+} from "lucide-react";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
+
+  // ✅ Redirect if not logged in OR recruiter opening /dashboard
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        navigate("/login");
+      } else if (user.role === "recruiter") {
+        navigate("/my-jobs");
+      }
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen text-gray-700">
+        Loading dashboard...
+      </div>
+    );
+  }
+
+  if (!user || user.role === "recruiter") {
+    return null; // recruiter is redirected, guest handled by ProtectedRoute
+  }
+
+  // ✅ Role checking for seekers
+  const isJobSeeker = ["jobseeker", "seeker"].includes(user.role);
 
   return (
     <div className="space-y-8">
@@ -23,62 +57,33 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
-      {user && (
+      {/* Quick Actions for Jobseekers */}
+      {isJobSeeker && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Actions for Seekers */}
-          {user.role === "seeker" && (
-            <>
-              <ActionCard
-                icon={<Briefcase className="w-6 h-6 text-blue-600" />}
-                title="Search Jobs"
-                description="Browse and apply for open positions."
-                onClick={() => navigate("/jobs")}
-              />
-              <ActionCard
-                icon={<Bookmark className="w-6 h-6 text-green-600" />}
-                title="Saved Jobs"
-                description="View and manage jobs you’ve saved."
-                onClick={() => navigate("/saved-jobs")}
-              />
-              <ActionCard
-                icon={<Bot className="w-6 h-6 text-purple-600" />}
-                title="AI Career Advisor"
-                description="Get tailored job recommendations."
-                onClick={() => navigate("/advisor")}
-              />
-              <ActionCard
-                icon={<FileText className="w-6 h-6 text-orange-600" />}
-                title="My Applications"
-                description="Track your submitted applications."
-                onClick={() => navigate("/applications")}
-              />
-            </>
-          )}
-
-          {/* Actions for Recruiters */}
-          {user.role === "recruiter" && (
-            <>
-              <ActionCard
-                icon={<PlusCircle className="w-6 h-6 text-blue-600" />}
-                title="Post a Job"
-                description="Create a new job listing."
-                onClick={() => navigate("/jobs/new")}
-              />
-              <ActionCard
-                icon={<Briefcase className="w-6 h-6 text-green-600" />}
-                title="My Jobs"
-                description="Manage your posted jobs."
-                onClick={() => navigate("/my-jobs")}
-              />
-              <ActionCard
-                icon={<Users className="w-6 h-6 text-purple-600" />}
-                title="View Applicants"
-                description="See who applied to your jobs."
-                onClick={() => navigate("/applicants")}
-              />
-            </>
-          )}
+          <ActionCard
+            icon={<Briefcase className="w-6 h-6 text-blue-600" />}
+            title="Search Jobs"
+            description="Browse and apply for open positions."
+            onClick={() => navigate("/jobs")}
+          />
+          <ActionCard
+            icon={<Bookmark className="w-6 h-6 text-green-600" />}
+            title="Saved Jobs"
+            description="View and manage jobs you’ve saved."
+            onClick={() => navigate("/saved-jobs")}
+          />
+          <ActionCard
+            icon={<Bot className="w-6 h-6 text-purple-600" />}
+            title="AI Career Advisor"
+            description="Get tailored job recommendations."
+            onClick={() => navigate("/advisor")}
+          />
+          <ActionCard
+            icon={<FileText className="w-6 h-6 text-orange-600" />}
+            title="My Applications"
+            description="Track your submitted applications."
+            onClick={() => navigate("/applications")}
+          />
         </div>
       )}
     </div>

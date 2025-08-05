@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Signup() {
   const [name, setName] = useState("");
@@ -9,14 +9,21 @@ export default function Signup() {
   const [role, setRole] = useState("jobseeker");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { signup } = useAuth();
 
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
 
     try {
-      await api.post("/auth/signup", { name, email, password, role });
-      navigate("/login");
+      const newUser = await signup(name, email, password, role); // ✅ Pass role
+
+      // ✅ Role-based redirect
+      if (newUser.role === "recruiter") {
+        navigate("/my-jobs");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError(err.response?.data?.msg || "Signup failed");
     }
@@ -33,6 +40,7 @@ export default function Signup() {
           className="w-full border p-2 rounded"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          required
         />
         <input
           type="email"
@@ -40,6 +48,7 @@ export default function Signup() {
           className="w-full border p-2 rounded"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
         <input
           type="password"
@@ -47,6 +56,7 @@ export default function Signup() {
           className="w-full border p-2 rounded"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
         <select
           className="w-full border p-2 rounded"

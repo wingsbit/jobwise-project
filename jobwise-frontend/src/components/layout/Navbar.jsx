@@ -1,4 +1,3 @@
-// src/components/layout/Navbar.jsx
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { DEFAULT_AVATAR } from "@/constants";
@@ -9,15 +8,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 
 export default function Navbar() {
-  const { user, setUser } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const avatarUrl = user?.avatar
@@ -25,10 +20,21 @@ export default function Navbar() {
     : DEFAULT_AVATAR;
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
-    navigate("/");
+    logout();
+    navigate("/login");
   };
+
+  // ✅ Smart dashboard navigation
+  const goToDashboard = () => {
+    if (user?.role === "recruiter") {
+      navigate("/my-jobs");
+    } else {
+      navigate("/dashboard");
+    }
+  };
+
+  const isJobSeeker = ["jobseeker", "seeker"].includes(user?.role);
+  const isRecruiter = user?.role === "recruiter";
 
   return (
     <header className="border-b bg-white sticky top-0 z-50">
@@ -70,15 +76,24 @@ export default function Navbar() {
                   />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                  <DropdownMenuItem onClick={goToDashboard}>
                     Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/saved-jobs")}>
-                    Saved Jobs
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/my-jobs")}>
-                    My Jobs
-                  </DropdownMenuItem>
+
+                  {/* Jobseeker-only */}
+                  {isJobSeeker && (
+                    <DropdownMenuItem onClick={() => navigate("/saved-jobs")}>
+                      Saved Jobs
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Recruiter-only */}
+                  {isRecruiter && (
+                    <DropdownMenuItem onClick={() => navigate("/my-jobs")}>
+                      My Jobs
+                    </DropdownMenuItem>
+                  )}
+
                   <DropdownMenuItem onClick={() => navigate("/profile")}>
                     Profile
                   </DropdownMenuItem>
@@ -122,19 +137,28 @@ export default function Navbar() {
                 ) : (
                   <>
                     <span className="font-medium">{user.name}</span>
-                    <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+                    <Button variant="ghost" onClick={goToDashboard}>
                       Dashboard
                     </Button>
-                    <Button variant="ghost" onClick={() => navigate("/saved-jobs")}>
-                      Saved Jobs
+
+                    {/* Jobseeker-only */}
+                    {isJobSeeker && (
+                      <Button variant="ghost" onClick={() => navigate("/saved-jobs")}>
+                        Saved Jobs
+                      </Button>
+                    )}
+
+                    {/* Recruiter-only */}
+                    {isRecruiter && (
+                      <Button variant="ghost" onClick={() => navigate("/my-jobs")}>
+                        My Jobs
+                      </Button>
+                    )}
+
+                    <Button variant="ghost" onClick={() => navigate("/profile")}>
+                      Profile
                     </Button>
-                    <Button variant="ghost" onClick={() => navigate("/my-jobs")}>
-                      My Jobs
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={handleLogout}
-                    >
+                    <Button variant="destructive" onClick={handleLogout}>
                       Logout
                     </Button>
                   </>

@@ -1,4 +1,4 @@
-// jobwise-backend/middleware/uploadMiddleware.js
+// middleware/uploadMiddleware.js
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -21,9 +21,10 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    // Unique file name: userId_timestamp.ext
-    const ext = path.extname(file.originalname);
-    cb(null, `${req.user?.id || "guest"}_${Date.now()}${ext}`);
+    const ext = path.extname(file.originalname).toLowerCase();
+    // Use req.userId from verifyToken, fallback to req.user.id, else guest
+    const userId = req.userId || req.user?.id || "guest";
+    cb(null, `${userId}_${Date.now()}${ext}`);
   },
 });
 
@@ -38,11 +39,11 @@ const fileFilter = (req, file, cb) => {
   if (ext && mime) {
     cb(null, true);
   } else {
-    cb(new Error("❌ Only .jpeg, .jpg, .png, and .webp formats are allowed"));
+    cb(new Error("❌ Only JPEG, JPG, PNG, and WEBP formats are allowed"));
   }
 };
 
-// Multer upload instance
+// Multer instance
 const upload = multer({
   storage,
   limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
