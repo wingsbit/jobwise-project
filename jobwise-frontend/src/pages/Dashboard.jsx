@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -6,26 +5,14 @@ import {
   Briefcase,
   Bookmark,
   Bot,
-  FileText,
-  PlusCircle,
-  Users,
+  FileText
 } from "lucide-react";
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
-  // ✅ Redirect if not logged in OR recruiter opening /dashboard
-  useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        navigate("/login");
-      } else if (user.role === "recruiter") {
-        navigate("/my-jobs");
-      }
-    }
-  }, [user, loading, navigate]);
-
+  // ⏳ Show loader while user info is loading
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen text-gray-700">
@@ -34,12 +21,10 @@ export default function Dashboard() {
     );
   }
 
-  if (!user || user.role === "recruiter") {
-    return null; // recruiter is redirected, guest handled by ProtectedRoute
+  // 🚫 Safety check — shouldn't happen because RoleProtectedRoute already handles it
+  if (!user) {
+    return null;
   }
-
-  // ✅ Role checking for seekers
-  const isJobSeeker = ["jobseeker", "seeker"].includes(user.role);
 
   return (
     <div className="space-y-8">
@@ -58,39 +43,37 @@ export default function Dashboard() {
       </Card>
 
       {/* Quick Actions for Jobseekers */}
-      {isJobSeeker && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <ActionCard
-            icon={<Briefcase className="w-6 h-6 text-blue-600" />}
-            title="Search Jobs"
-            description="Browse and apply for open positions."
-            onClick={() => navigate("/jobs")}
-          />
-          <ActionCard
-            icon={<Bookmark className="w-6 h-6 text-green-600" />}
-            title="Saved Jobs"
-            description="View and manage jobs you’ve saved."
-            onClick={() => navigate("/saved-jobs")}
-          />
-          <ActionCard
-            icon={<Bot className="w-6 h-6 text-purple-600" />}
-            title="AI Career Advisor"
-            description="Get tailored job recommendations."
-            onClick={() => navigate("/advisor")}
-          />
-          <ActionCard
-            icon={<FileText className="w-6 h-6 text-orange-600" />}
-            title="My Applications"
-            description="Track your submitted applications."
-            onClick={() => navigate("/applications")}
-          />
-        </div>
-      )}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <ActionCard
+          icon={<Briefcase className="w-6 h-6 text-blue-600" />}
+          title="Search Jobs"
+          description="Browse and apply for open positions."
+          onClick={() => navigate("/jobs")}
+        />
+        <ActionCard
+          icon={<Bookmark className="w-6 h-6 text-green-600" />}
+          title="Saved Jobs"
+          description="View and manage jobs you’ve saved."
+          onClick={() => navigate("/saved-jobs")}
+        />
+        <ActionCard
+          icon={<Bot className="w-6 h-6 text-purple-600" />}
+          title="AI Career Advisor"
+          description="Get tailored job recommendations."
+          onClick={() => navigate("/advisor")}
+        />
+        <ActionCard
+          icon={<FileText className="w-6 h-6 text-orange-600" />}
+          title="My Applications"
+          description="Track your submitted applications."
+          onClick={() => navigate("/applications")}
+        />
+      </div>
     </div>
   );
 }
 
-/* Reusable Action Card Component */
+/* 🔹 Reusable Action Card Component */
 function ActionCard({ icon, title, description, onClick }) {
   return (
     <Card

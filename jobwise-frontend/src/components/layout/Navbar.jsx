@@ -24,15 +24,7 @@ export default function Navbar() {
     navigate("/login");
   };
 
-  // ✅ Smart dashboard navigation
-  const goToDashboard = () => {
-    if (user?.role === "recruiter") {
-      navigate("/my-jobs");
-    } else {
-      navigate("/dashboard");
-    }
-  };
-
+  // ✅ Role checks
   const isJobSeeker = ["jobseeker", "seeker"].includes(user?.role);
   const isRecruiter = user?.role === "recruiter";
 
@@ -48,7 +40,9 @@ export default function Navbar() {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex gap-6">
           <Link to="/jobs" className="hover:text-blue-600">Jobs</Link>
-          <Link to="/advisor" className="hover:text-blue-600">AI Advisor</Link>
+          {isJobSeeker && (
+            <Link to="/advisor" className="hover:text-blue-600">AI Advisor</Link>
+          )}
         </nav>
 
         {/* Right Side - Desktop */}
@@ -76,24 +70,34 @@ export default function Navbar() {
                   />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={goToDashboard}>
-                    Dashboard
-                  </DropdownMenuItem>
-
-                  {/* Jobseeker-only */}
+                  
+                  {/* Dashboard route depends on role */}
                   {isJobSeeker && (
-                    <DropdownMenuItem onClick={() => navigate("/saved-jobs")}>
-                      Saved Jobs
+                    <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                      Dashboard
                     </DropdownMenuItem>
                   )}
-
-                  {/* Recruiter-only */}
                   {isRecruiter && (
                     <DropdownMenuItem onClick={() => navigate("/my-jobs")}>
                       My Jobs
                     </DropdownMenuItem>
                   )}
 
+                  {/* Jobseeker-only menu */}
+                  {isJobSeeker && (
+                    <DropdownMenuItem onClick={() => navigate("/saved-jobs")}>
+                      Saved Jobs
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Recruiter-only menu */}
+                  {isRecruiter && (
+                    <DropdownMenuItem onClick={() => navigate("/jobs/new")}>
+                      Post a Job
+                    </DropdownMenuItem>
+                  )}
+
+                  {/* Shared */}
                   <DropdownMenuItem onClick={() => navigate("/profile")}>
                     Profile
                   </DropdownMenuItem>
@@ -122,9 +126,11 @@ export default function Navbar() {
                 <Link to="/jobs" onClick={() => navigate("/jobs")}>
                   Jobs
                 </Link>
-                <Link to="/advisor" onClick={() => navigate("/advisor")}>
-                  AI Advisor
-                </Link>
+                {isJobSeeker && (
+                  <Link to="/advisor" onClick={() => navigate("/advisor")}>
+                    AI Advisor
+                  </Link>
+                )}
                 {!user ? (
                   <>
                     <Button variant="outline" onClick={() => navigate("/login")}>
@@ -136,25 +142,26 @@ export default function Navbar() {
                   </>
                 ) : (
                   <>
-                    <span className="font-medium">{user.name}</span>
-                    <Button variant="ghost" onClick={goToDashboard}>
-                      Dashboard
-                    </Button>
-
-                    {/* Jobseeker-only */}
                     {isJobSeeker && (
-                      <Button variant="ghost" onClick={() => navigate("/saved-jobs")}>
-                        Saved Jobs
+                      <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+                        Dashboard
                       </Button>
                     )}
-
-                    {/* Recruiter-only */}
                     {isRecruiter && (
                       <Button variant="ghost" onClick={() => navigate("/my-jobs")}>
                         My Jobs
                       </Button>
                     )}
-
+                    {isJobSeeker && (
+                      <Button variant="ghost" onClick={() => navigate("/saved-jobs")}>
+                        Saved Jobs
+                      </Button>
+                    )}
+                    {isRecruiter && (
+                      <Button variant="ghost" onClick={() => navigate("/jobs/new")}>
+                        Post a Job
+                      </Button>
+                    )}
                     <Button variant="ghost" onClick={() => navigate("/profile")}>
                       Profile
                     </Button>

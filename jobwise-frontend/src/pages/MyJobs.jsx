@@ -6,12 +6,13 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function MyJobs() {
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
-  // ✅ Redirect jobseekers to dashboard
+  // ✅ Role guard: Recruiter only
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
@@ -33,26 +34,29 @@ export default function MyJobs() {
         setLoading(false);
       }
     };
-
-    if (user?.role === "recruiter") {
-      fetchMyJobs();
-    }
-  }, [user]);
+    fetchMyJobs();
+  }, []);
 
   const handleDelete = async (id) => {
     try {
+      setDeletingId(id);
       await api.delete(`/api/jobs/${id}`);
       setJobs((prev) => prev.filter((job) => job._id !== id));
     } catch (err) {
       console.error("Error deleting job:", err);
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  if (loading || authLoading) return <div className="p-6">Loading your jobs...</div>;
+  if (authLoading || loading) return <div className="p-6">Loading your jobs...</div>;
 
   return (
     <div className="max-w-5xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">My Jobs</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">My Jobs</h1>
+        <Button onClick={() => navigate("/jobs/new")}>+ Post New Job</Button>
+      </div>
 
       {jobs.length === 0 ? (
         <p className="text-gray-600">You haven’t posted any jobs yet.</p>
@@ -76,8 +80,9 @@ export default function MyJobs() {
                   variant="destructive"
                   size="sm"
                   onClick={() => handleDelete(job._id)}
+                  disabled={deletingId === job._id}
                 >
-                  Delete
+                  {deletingId === job._id ? "Deleting..." : "Delete"}
                 </Button>
               </CardContent>
             </Card>

@@ -10,7 +10,7 @@ export default function Applicants() {
   useEffect(() => {
     const fetchApplicants = async () => {
       try {
-        const res = await api.get("/api/applications/my"); // Adjust endpoint if needed
+        const res = await api.get("/api/applications/my");
         setApplicants(res.data);
       } catch (err) {
         console.error("Error fetching applicants:", err);

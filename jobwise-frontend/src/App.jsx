@@ -29,7 +29,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
-
+        
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/jobs" element={<Jobs />} />

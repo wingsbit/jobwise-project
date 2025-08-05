@@ -64,7 +64,6 @@ export default function EditJob() {
                 name="title"
                 value={job.title}
                 onChange={handleChange}
-                placeholder="e.g., Senior Software Engineer"
                 required
               />
             </div>
@@ -76,7 +75,6 @@ export default function EditJob() {
                 name="company"
                 value={job.company}
                 onChange={handleChange}
-                placeholder="e.g., Acme Corp"
                 required
               />
             </div>
@@ -88,7 +86,6 @@ export default function EditJob() {
                 name="location"
                 value={job.location}
                 onChange={handleChange}
-                placeholder="e.g., New York, Remote"
                 required
               />
             </div>
@@ -100,7 +97,6 @@ export default function EditJob() {
                 name="salary"
                 value={job.salary}
                 onChange={handleChange}
-                placeholder="e.g., $80,000 - $100,000"
               />
             </div>
 
@@ -111,7 +107,6 @@ export default function EditJob() {
                 name="description"
                 value={job.description}
                 onChange={handleChange}
-                placeholder="Write the job description..."
                 rows={5}
                 required
               />

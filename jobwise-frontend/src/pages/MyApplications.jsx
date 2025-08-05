@@ -1,20 +1,31 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 export default function MyApplications() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ✅ Role guard: Jobseeker only
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) navigate("/login");
+      else if (!["jobseeker", "seeker"].includes(user.role)) navigate("/dashboard");
+    }
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        const res = await api.get("/api/applications");
+        const res = await api.get("/api/applications/my");
         setApplications(res.data);
-      } catch (err) {
-        console.error("Error fetching applications:", err);
+      } catch (error) {
+        console.error("Error fetching applications:", error);
       } finally {
         setLoading(false);
       }
@@ -22,44 +33,47 @@ export default function MyApplications() {
     fetchApplications();
   }, []);
 
-  if (loading) return <div className="p-6">Loading applications...</div>;
+  const handleWithdraw = async (id) => {
+    try {
+      await api.delete(`/api/applications/${id}`);
+      setApplications((prev) => prev.filter((app) => app._id !== id));
+    } catch (error) {
+      console.error("Error withdrawing application:", error);
+    }
+  };
+
+  if (authLoading || loading) return <div className="p-6">Loading applications...</div>;
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">My Applications</h1>
-
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">My Applications</h1>
       {applications.length === 0 ? (
         <p className="text-gray-600">You haven’t applied to any jobs yet.</p>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4">
           {applications.map((app) => (
-            <Card key={app._id} className="flex flex-col justify-between">
-              <CardHeader>
-                <CardTitle className="text-lg">{app.jobTitle}</CardTitle>
-                <p className="text-sm text-gray-500">{app.company}</p>
-                <p className="text-sm text-gray-500">{app.location}</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Applied on {new Date(app.appliedAt).toLocaleDateString()}
-                </p>
+            <Card key={app._id}>
+              <CardHeader className="flex justify-between items-center">
+                <div>
+                  <CardTitle>{app.jobTitle}</CardTitle>
+                  <p className="text-sm text-gray-600">
+                    {app.company} — Applied on {new Date(app.appliedDate).toLocaleDateString()}
+                  </p>
+                  <p className="text-sm mt-1 font-medium">
+                    Status:{" "}
+                    <span className={app.status.includes("Interview") ? "text-green-600" : "text-yellow-600"}>
+                      {app.status}
+                    </span>
+                  </p>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleWithdraw(app._id)}
+                >
+                  Withdraw
+                </Button>
               </CardHeader>
-              <CardContent className="flex justify-between items-center mt-auto">
-                <Link to={`/jobs/${app.jobId}`}>
-                  <Button variant="outline" size="sm">View Job</Button>
-                </Link>
-                {app.status && (
-                  <span
-                    className={`text-xs font-medium px-2 py-1 rounded ${
-                      app.status === "Accepted"
-                        ? "bg-green-100 text-green-700"
-                        : app.status === "Rejected"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {app.status}
-                  </span>
-                )}
-              </CardContent>
             </Card>
           ))}
         </div>

@@ -41,11 +41,7 @@ export default function AIAdvisor() {
             value={goals}
             onChange={(e) => setGoals(e.target.value)}
           />
-          <Button
-            onClick={handleGetAdvice}
-            disabled={loading}
-            className="w-full"
-          >
+          <Button onClick={handleGetAdvice} disabled={loading} className="w-full">
             {loading ? "Getting Advice..." : "Get Advice"}
           </Button>
           {advice && (

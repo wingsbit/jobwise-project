@@ -1,62 +1,50 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import api from "@/lib/api";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import api from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function SavedJobs() {
-  const { user, savedJobs, setSavedJobs } = useAuth();
+  const { user, savedJobs, setSavedJobs, loading: authLoading } = useAuth();
   const [savedJobDetails, setSavedJobDetails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState(null);
-  const [errorMsg, setErrorMsg] = useState(null);
+  const navigate = useNavigate();
 
-  // Fetch full job details for saved jobs (Seekers only)
+  // ✅ Role guard: Jobseeker only
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
+    if (!authLoading) {
+      if (!user) {
+        navigate("/login");
+      } else if (!["jobseeker", "seeker"].includes(user.role)) {
+        navigate("/dashboard");
+      }
     }
+  }, [user, authLoading, navigate]);
 
-    if (user.role !== "seeker") {
-      setErrorMsg("This feature is only available to job seekers.");
-      setLoading(false);
-      return;
-    }
-
+  useEffect(() => {
     const fetchSavedJobDetails = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
       try {
-        const res = await api.get("/api/jobs/saved", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          withCredentials: true,
-        });
+        const res = await api.get("/api/jobs/saved");
         setSavedJobDetails(res.data);
       } catch (error) {
-        if (error.response?.status === 403) {
-          setErrorMsg("This feature is only available to job seekers.");
-        } else {
-          console.error("Error fetching saved jobs:", error);
-        }
+        console.error("Error fetching saved jobs:", error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchSavedJobDetails();
   }, [user, savedJobs]);
 
-  // Remove saved job
   const handleRemove = async (id) => {
     try {
       setRemovingId(id);
-      await api.delete(`/api/jobs/saved/${id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        withCredentials: true,
-      });
+      await api.delete(`/api/jobs/saved/${id}`);
       setSavedJobs((prev) => prev.filter((jobId) => jobId !== id));
     } catch (error) {
       console.error("Error removing saved job:", error);
@@ -65,15 +53,7 @@ export default function SavedJobs() {
     }
   };
 
-  if (!user) {
-    return <p className="p-6 text-gray-600">Please log in to view saved jobs.</p>;
-  }
-
-  if (loading) return <div className="p-6">Loading saved jobs...</div>;
-
-  if (errorMsg) {
-    return <div className="p-6 text-red-500 font-medium">{errorMsg}</div>;
-  }
+  if (authLoading || loading) return <div className="p-6">Loading saved jobs...</div>;
 
   return (
     <div className="space-y-6">

@@ -1,13 +1,27 @@
 import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 
 export default function Applications() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ✅ Role protection: Only allow jobseekers
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        navigate("/login");
+      } else if (!["jobseeker", "seeker"].includes(user.role)) {
+        navigate("/dashboard");
+      }
+    }
+  }, [user, authLoading, navigate]);
 
   // Fetch applications (placeholder until backend is connected)
   useEffect(() => {
@@ -44,15 +58,17 @@ export default function Applications() {
       }
     };
 
-    fetchApplications();
-  }, []);
+    if (user && ["jobseeker", "seeker"].includes(user.role)) {
+      fetchApplications();
+    }
+  }, [user]);
 
   const handleWithdraw = (id) => {
     // TODO: Connect to backend withdraw route
     setApplications((prev) => prev.filter((app) => app.id !== id));
   };
 
-  if (loading) return <div className="p-6">Loading applications...</div>;
+  if (loading || authLoading) return <div className="p-6">Loading applications...</div>;
 
   return (
     <div className="space-y-6">
