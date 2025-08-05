@@ -1,65 +1,72 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import api from "@/lib/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/context/AuthContext";
 
 export default function JobDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [error, setError] = useState("");
 
-  // Form state
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [coverLetter, setCoverLetter] = useState("");
-  const [resume, setResume] = useState(null);
-
+  // ✅ Fetch job details
   useEffect(() => {
     const fetchJob = async () => {
       try {
-        const res = await api.get(`/api/jobs/${id}`);
+        const res = await api.get(`/jobs/${id}`);
         setJob(res.data);
       } catch (err) {
         console.error("Error fetching job details:", err);
+        setError("Failed to load job details.");
       } finally {
         setLoading(false);
       }
     };
+
     fetchJob();
   }, [id]);
 
-  const handleApply = async (e) => {
-    e.preventDefault();
+  // ✅ Check if already applied (only for seekers)
+  useEffect(() => {
+    const checkIfApplied = async () => {
+      if (!user || !["seeker", "jobseeker"].includes(user.role)) return;
+      try {
+        const res = await api.get("/jobs/my-applications");
+        const alreadyApplied = res.data?.some((appliedJob) => appliedJob._id === id);
+        setHasApplied(alreadyApplied);
+      } catch {
+        // Ignore check failure
+      }
+    };
+
+    checkIfApplied();
+  }, [id, user]);
+
+  // ✅ Handle Apply
+  const handleApply = async () => {
     setApplying(true);
+    setError("");
     try {
-      const formData = new FormData();
-      formData.append("name", name);
-      formData.append("email", email);
-      formData.append("phone", phone);
-      formData.append("coverLetter", coverLetter);
-      if (resume) formData.append("resume", resume);
-
-      await api.post(`/api/jobs/${id}/apply`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      navigate("/my-applications");
+      await api.post(`/jobs/apply/${id}`);
+      setHasApplied(true);
+      navigate("/applications"); // Go to "My Applications"
     } catch (err) {
       console.error("Error applying for job:", err);
+      setError(err.response?.data?.msg || "Failed to apply for this job.");
     } finally {
       setApplying(false);
     }
   };
 
   if (loading) return <div className="p-6">Loading job details...</div>;
-
+  if (error) return <div className="p-6 text-red-600">{error}</div>;
   if (!job) return <div className="p-6">Job not found</div>;
 
   return (
@@ -68,91 +75,40 @@ export default function JobDetails() {
       <Card>
         <CardHeader>
           <CardTitle>{job.title}</CardTitle>
-          <p className="text-sm text-gray-500">{job.company}</p>
-          <p className="text-sm text-gray-500">{job.location}</p>
+          {job.company && <p className="text-sm text-gray-500">{job.company}</p>}
+          {job.location && <p className="text-sm text-gray-500">{job.location}</p>}
           {job.salary && (
             <p className="text-sm font-medium mt-1">{job.salary}</p>
           )}
         </CardHeader>
         <CardContent>
-          <p className="text-gray-700 whitespace-pre-line">
-            {job.description}
-          </p>
+          <p className="text-gray-700 whitespace-pre-line">{job.description}</p>
         </CardContent>
       </Card>
 
-      {/* Apply Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Apply Now</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleApply} className="space-y-4">
-            <div>
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
+      {/* Actions */}
+      {user?.role && ["seeker", "jobseeker"].includes(user.role) && (
+        <div className="flex gap-3">
+          <Button
+            onClick={handleApply}
+            disabled={applying || hasApplied}
+            className={hasApplied ? "bg-gray-400 cursor-not-allowed" : ""}
+          >
+            {hasApplied ? "Already Applied" : applying ? "Applying..." : "Apply Now"}
+          </Button>
+        </div>
+      )}
 
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="coverLetter">Cover Letter</Label>
-              <Textarea
-                id="coverLetter"
-                value={coverLetter}
-                onChange={(e) => setCoverLetter(e.target.value)}
-                rows={4}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="resume">Resume (PDF or DOC)</Label>
-              <Input
-                id="resume"
-                type="file"
-                accept=".pdf,.doc,.docx"
-                onChange={(e) => setResume(e.target.files[0])}
-              />
-            </div>
-
-            <div className="flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate(-1)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={applying}>
-                {applying ? "Submitting..." : "Submit Application"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      {user?.role === "recruiter" && job.createdBy?._id === user._id && (
+        <div className="flex gap-3">
+          <Link
+            to={`/jobs/${id}/applicants`}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            View Applicants
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

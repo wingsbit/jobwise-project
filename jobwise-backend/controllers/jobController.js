@@ -9,9 +9,7 @@ export const createJob = async (req, res, next) => {
     const { title, description, location, salary, skills } = req.body;
 
     if (!title || !description || !location) {
-      return res
-        .status(400)
-        .json({ msg: "Title, description, and location are required" });
+      return res.status(400).json({ msg: "Title, description, and location are required" });
     }
 
     const job = await Job.create({
@@ -46,10 +44,7 @@ export const getJobs = async (req, res, next) => {
  */
 export const getJobById = async (req, res, next) => {
   try {
-    const job = await Job.findById(req.params.id).populate(
-      "createdBy",
-      "name email"
-    );
+    const job = await Job.findById(req.params.id).populate("createdBy", "name email");
     if (!job) return res.status(404).json({ msg: "Job not found" });
     res.status(200).json(job);
   } catch (error) {
@@ -81,9 +76,10 @@ export const deleteJob = async (req, res, next) => {
  */
 export const getMyJobs = async (req, res, next) => {
   try {
-    const jobs = await Job.find({ createdBy: req.user._id }).sort({
-      createdAt: -1,
-    });
+    const jobs = await Job.find({ createdBy: req.user._id })
+      .sort({ createdAt: -1 })
+      .populate("createdBy", "name email");
+
     res.status(200).json(jobs);
   } catch (error) {
     next(error);
@@ -118,7 +114,146 @@ export const updateJob = async (req, res, next) => {
 };
 
 /**
- * @desc Save a job for logged-in user (Job Seeker only)
+ * @desc Apply to a job (Seeker only)
+ */
+export const applyToJob = async (req, res, next) => {
+  try {
+    if (!["seeker", "jobseeker"].includes(req.user.role)) {
+      return res.status(403).json({ msg: "Only job seekers can apply to jobs" });
+    }
+
+    const jobId = req.params.id;
+    const job = await Job.findById(jobId);
+    if (!job) return res.status(404).json({ msg: "Job not found" });
+
+    const user = await User.findById(req.user._id);
+
+    const alreadyApplied = user.appliedJobs.some((a) => a.job.toString() === jobId);
+
+    if (!alreadyApplied) {
+      user.appliedJobs.push({
+        job: jobId,
+        appliedAt: new Date(),
+        status: "Pending",
+      });
+      await user.save();
+    }
+
+    res.status(200).json({ msg: "Application submitted successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc Get jobs applied by logged-in seeker
+ */
+export const getMyApplications = async (req, res, next) => {
+  try {
+    if (!["seeker", "jobseeker"].includes(req.user.role)) {
+      return res.status(403).json({ msg: "Only job seekers can view applications" });
+    }
+
+    const user = await User.findById(req.user._id).populate({
+      path: "appliedJobs.job",
+      populate: { path: "createdBy", select: "name email" },
+    });
+
+    if (!user || !user.appliedJobs) {
+      return res.status(200).json([]);
+    }
+
+    const applications = user.appliedJobs.map((app) => ({
+      ...app.job.toObject(),
+      appliedAt: app.appliedAt || null,
+      status: app.status || "Pending",
+    }));
+
+    res.status(200).json(applications);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc Get applicants for a job (Recruiter only)
+ */
+export const getJobApplicants = async (req, res, next) => {
+  try {
+    const jobId = req.params.id;
+
+    const job = await Job.findById(jobId);
+    if (!job) return res.status(404).json({ msg: "Job not found" });
+
+    if (job.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ msg: "Not authorized" });
+    }
+
+    const applicants = await User.find({ "appliedJobs.job": jobId }).select(
+      "name email avatar resume appliedJobs"
+    );
+
+    const formattedApplicants = applicants.map((applicant) => {
+      const applicationData = applicant.appliedJobs.find(
+        (a) => a.job.toString() === jobId
+      );
+      return {
+        _id: applicant._id,
+        name: applicant.name,
+        email: applicant.email,
+        avatar: applicant.avatar,
+        resume: applicant.resume,
+        appliedAt: applicationData?.appliedAt || null,
+        status: applicationData?.status || "Pending",
+      };
+    });
+
+    res.status(200).json(formattedApplicants);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc Update applicant status (Recruiter only)
+ */
+export const updateApplicantStatus = async (req, res, next) => {
+  try {
+    const { jobId, applicantId } = req.params;
+    const { status } = req.body;
+
+    const allowedStatuses = ["Pending", "Shortlisted", "Rejected", "Hired"];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ msg: "Invalid status" });
+    }
+
+    const job = await Job.findById(jobId);
+    if (!job) return res.status(404).json({ msg: "Job not found" });
+
+    if (job.createdBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ msg: "Not authorized to update this applicant" });
+    }
+
+    const user = await User.findById(applicantId);
+    if (!user) return res.status(404).json({ msg: "Applicant not found" });
+
+    const application = user.appliedJobs.find((a) => a.job.toString() === jobId);
+    if (!application) {
+      return res.status(404).json({ msg: "Application not found" });
+    }
+
+    application.status = status;
+    await user.save();
+
+    res.status(200).json({ msg: "Status updated successfully" });
+  } catch (error) {
+    console.error("❌ Error updating applicant status:", error);
+    next(error);
+  }
+};
+
+/**
+ * @desc Save a job (Seeker only)
  */
 export const saveJob = async (req, res, next) => {
   try {
@@ -126,30 +261,25 @@ export const saveJob = async (req, res, next) => {
       return res.status(403).json({ msg: "Only job seekers can save jobs" });
     }
 
-    const userId = req.user._id;
     const jobId = req.params.id;
-
     const job = await Job.findById(jobId);
     if (!job) return res.status(404).json({ msg: "Job not found" });
 
-    const user = await User.findById(userId);
+    const user = await User.findById(req.user._id);
 
     if (!user.savedJobs.includes(jobId)) {
       user.savedJobs.push(jobId);
       await user.save();
     }
 
-    res.status(200).json({
-      msg: "Job saved successfully",
-      savedJobs: user.savedJobs,
-    });
+    res.status(200).json({ msg: "Job saved successfully", savedJobs: user.savedJobs });
   } catch (error) {
     next(error);
   }
 };
 
 /**
- * @desc Get all saved jobs for logged-in user (Job Seeker only)
+ * @desc Get saved jobs (Seeker only)
  */
 export const getSavedJobs = async (req, res, next) => {
   try {
@@ -165,7 +295,7 @@ export const getSavedJobs = async (req, res, next) => {
 };
 
 /**
- * @desc Remove a saved job for logged-in user (Job Seeker only)
+ * @desc Remove saved job (Seeker only)
  */
 export const removeSavedJob = async (req, res, next) => {
   try {
@@ -173,24 +303,18 @@ export const removeSavedJob = async (req, res, next) => {
       return res.status(403).json({ msg: "Only job seekers can remove saved jobs" });
     }
 
-    const userId = req.user._id;
-    const jobId = req.params.id;
+    const user = await User.findById(req.user._id);
 
-    const user = await User.findById(userId);
-
-    if (!user.savedJobs.includes(jobId)) {
+    if (!user.savedJobs.includes(req.params.id)) {
       return res.status(404).json({ msg: "Job not found in saved list" });
     }
 
     user.savedJobs = user.savedJobs.filter(
-      (savedId) => savedId.toString() !== jobId
+      (savedId) => savedId.toString() !== req.params.id
     );
     await user.save();
 
-    res.status(200).json({
-      msg: "Job removed from saved list",
-      savedJobs: user.savedJobs,
-    });
+    res.status(200).json({ msg: "Job removed from saved list", savedJobs: user.savedJobs });
   } catch (error) {
     next(error);
   }

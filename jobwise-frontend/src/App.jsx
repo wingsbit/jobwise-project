@@ -99,7 +99,7 @@ export default function App() {
           }
         />
         <Route
-          path="/jobs/edit/:id"
+          path="/jobs/:id/edit"
           element={
             <RoleProtectedRoute allowedRoles={["recruiter"]}>
               <EditJob />

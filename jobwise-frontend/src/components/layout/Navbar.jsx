@@ -24,9 +24,12 @@ export default function Navbar() {
     navigate("/login");
   };
 
-  // ✅ Role checks
+  // Role checks
   const isJobSeeker = ["jobseeker", "seeker"].includes(user?.role);
   const isRecruiter = user?.role === "recruiter";
+
+  // Mock: replace this with real subscription check later
+  const isPremium = user?.isPremium;
 
   return (
     <header className="border-b bg-white sticky top-0 z-50">
@@ -37,30 +40,36 @@ export default function Navbar() {
           Jobwise
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex gap-6">
+        {/* Center Navigation */}
+        <nav className="hidden md:flex gap-6 text-gray-700 font-medium">
           <Link to="/jobs" className="hover:text-blue-600">Jobs</Link>
-          {isJobSeeker && (
-            <Link to="/advisor" className="hover:text-blue-600">AI Advisor</Link>
-          )}
+          <Link to="/pricing" className="hover:text-blue-600">Pricing</Link>
+          <Link to="/advisor" className="hover:text-blue-600">AI Advisor</Link>
         </nav>
 
-        {/* Right Side - Desktop */}
+        {/* Right Side */}
         <div className="hidden md:flex items-center gap-4">
           {!user ? (
             <>
               <Button variant="outline" onClick={() => navigate("/login")}>
                 Login
               </Button>
-              <Button onClick={() => navigate("/signup")}>
-                Sign Up
-              </Button>
+              <Button onClick={() => navigate("/signup")}>Sign Up</Button>
             </>
           ) : (
-            <div className="flex items-center gap-3">
-              <span className="hidden sm:inline text-sm font-medium text-gray-700">
-                {user.name}
-              </span>
+            <>
+              {/* Upgrade for non-premium */}
+              {!isPremium && (
+                <Button
+                  variant="default"
+                  onClick={() => navigate("/pricing")}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                >
+                  Upgrade
+                </Button>
+              )}
+
+              {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <img
@@ -71,30 +80,29 @@ export default function Navbar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   
-                  {/* Dashboard route depends on role */}
+                  {/* Role-based Dashboard Links */}
                   {isJobSeeker && (
-                    <DropdownMenuItem onClick={() => navigate("/dashboard")}>
-                      Dashboard
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                        Dashboard
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/applications")}>
+                        My Applications
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/saved-jobs")}>
+                        Saved Jobs
+                      </DropdownMenuItem>
+                    </>
                   )}
                   {isRecruiter && (
-                    <DropdownMenuItem onClick={() => navigate("/my-jobs")}>
-                      My Jobs
-                    </DropdownMenuItem>
-                  )}
-
-                  {/* Jobseeker-only menu */}
-                  {isJobSeeker && (
-                    <DropdownMenuItem onClick={() => navigate("/saved-jobs")}>
-                      Saved Jobs
-                    </DropdownMenuItem>
-                  )}
-
-                  {/* Recruiter-only menu */}
-                  {isRecruiter && (
-                    <DropdownMenuItem onClick={() => navigate("/jobs/new")}>
-                      Post a Job
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem onClick={() => navigate("/my-jobs")}>
+                        My Jobs
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/jobs/new")}>
+                        Post a Job
+                      </DropdownMenuItem>
+                    </>
                   )}
 
                   {/* Shared */}
@@ -109,7 +117,7 @@ export default function Navbar() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
+            </>
           )}
         </div>
 
@@ -123,14 +131,10 @@ export default function Navbar() {
             </SheetTrigger>
             <SheetContent side="right" className="p-6 w-64">
               <div className="flex flex-col gap-6">
-                <Link to="/jobs" onClick={() => navigate("/jobs")}>
-                  Jobs
-                </Link>
-                {isJobSeeker && (
-                  <Link to="/advisor" onClick={() => navigate("/advisor")}>
-                    AI Advisor
-                  </Link>
-                )}
+                <Link to="/jobs">Jobs</Link>
+                <Link to="/pricing">Pricing</Link>
+                <Link to="/advisor">AI Advisor</Link>
+
                 {!user ? (
                   <>
                     <Button variant="outline" onClick={() => navigate("/login")}>
@@ -142,25 +146,37 @@ export default function Navbar() {
                   </>
                 ) : (
                   <>
-                    {isJobSeeker && (
-                      <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-                        Dashboard
+                    {!isPremium && (
+                      <Button
+                        variant="default"
+                        onClick={() => navigate("/pricing")}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                      >
+                        Upgrade
                       </Button>
+                    )}
+                    {isJobSeeker && (
+                      <>
+                        <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+                          Dashboard
+                        </Button>
+                        <Button variant="ghost" onClick={() => navigate("/applications")}>
+                          My Applications
+                        </Button>
+                        <Button variant="ghost" onClick={() => navigate("/saved-jobs")}>
+                          Saved Jobs
+                        </Button>
+                      </>
                     )}
                     {isRecruiter && (
-                      <Button variant="ghost" onClick={() => navigate("/my-jobs")}>
-                        My Jobs
-                      </Button>
-                    )}
-                    {isJobSeeker && (
-                      <Button variant="ghost" onClick={() => navigate("/saved-jobs")}>
-                        Saved Jobs
-                      </Button>
-                    )}
-                    {isRecruiter && (
-                      <Button variant="ghost" onClick={() => navigate("/jobs/new")}>
-                        Post a Job
-                      </Button>
+                      <>
+                        <Button variant="ghost" onClick={() => navigate("/my-jobs")}>
+                          My Jobs
+                        </Button>
+                        <Button variant="ghost" onClick={() => navigate("/jobs/new")}>
+                          Post a Job
+                        </Button>
+                      </>
                     )}
                     <Button variant="ghost" onClick={() => navigate("/profile")}>
                       Profile

@@ -1,94 +1,93 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "@/lib/api";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import RoleProtectedRoute from "@/components/auth/RoleProtectedRoute";
 
 export default function MyJobs() {
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState(null);
+  const [error, setError] = useState("");
 
-  // ✅ Role guard: Recruiter only
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        navigate("/login");
-      } else if (user.role !== "recruiter") {
-        navigate("/dashboard");
-      }
-    }
-  }, [user, authLoading, navigate]);
-
-  useEffect(() => {
-    const fetchMyJobs = async () => {
-      try {
-        const res = await api.get("/api/jobs/my");
-        setJobs(res.data);
-      } catch (err) {
-        console.error("Error fetching my jobs:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMyJobs();
-  }, []);
-
-  const handleDelete = async (id) => {
+  const fetchJobs = async () => {
+    setLoading(true);
+    setError("");
     try {
-      setDeletingId(id);
-      await api.delete(`/api/jobs/${id}`);
-      setJobs((prev) => prev.filter((job) => job._id !== id));
+      const res = await api.get("/jobs/my-jobs");
+      setJobs(res.data || []);
     } catch (err) {
-      console.error("Error deleting job:", err);
+      console.error("Error fetching my jobs:", err);
+      setError(err.response?.data?.msg || "Failed to load your jobs.");
     } finally {
-      setDeletingId(null);
+      setLoading(false);
     }
   };
 
-  if (authLoading || loading) return <div className="p-6">Loading your jobs...</div>;
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 text-gray-600">
+        <span className="animate-pulse">Loading your jobs...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-red-600 mb-4">{error}</p>
+        <button
+          onClick={fetchJobs}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">My Jobs</h1>
-        <Button onClick={() => navigate("/jobs/new")}>+ Post New Job</Button>
-      </div>
+    <RoleProtectedRoute allowedRoles={["recruiter"]}>
+      <div className="max-w-4xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-4">My Jobs</h1>
 
-      {jobs.length === 0 ? (
-        <p className="text-gray-600">You haven’t posted any jobs yet.</p>
-      ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {jobs.map((job) => (
-            <Card key={job._id} className="flex flex-col justify-between">
-              <CardHeader>
-                <CardTitle className="text-lg">{job.title}</CardTitle>
-                <p className="text-sm text-gray-500">{job.company}</p>
-                <p className="text-sm text-gray-500">{job.location}</p>
-              </CardHeader>
-              <CardContent className="flex justify-between gap-2 mt-auto">
-                <Link to={`/jobs/${job._id}`}>
-                  <Button variant="outline" size="sm">View</Button>
-                </Link>
-                <Link to={`/jobs/edit/${job._id}`}>
-                  <Button size="sm">Edit</Button>
-                </Link>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleDelete(job._id)}
-                  disabled={deletingId === job._id}
-                >
-                  {deletingId === job._id ? "Deleting..." : "Delete"}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+        {jobs.length === 0 ? (
+          <p className="text-gray-500">You haven’t posted any jobs yet.</p>
+        ) : (
+          <div className="space-y-4">
+            {jobs.map((job) => (
+              <div
+                key={job._id}
+                className="border rounded p-4 bg-white shadow-sm flex justify-between items-center"
+              >
+                <div>
+                  <h2 className="font-medium">{job.title}</h2>
+                  <p className="text-sm text-gray-600">
+                    {job.company || "No company name"}
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <Link
+                    to={`/jobs/${job._id}/edit`}
+                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                  >
+                    Edit
+                  </Link>
+                  <Link
+                    to={`/jobs/${job._id}/applicants`}
+                    className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                  >
+                    Applicants
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </RoleProtectedRoute>
   );
 }

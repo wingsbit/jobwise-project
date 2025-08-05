@@ -10,36 +10,32 @@ import {
   updateJob,
   saveJob,
   getSavedJobs,
-  removeSavedJob
+  removeSavedJob,
+  applyToJob,
+  getJobApplicants,
+  getMyApplications,
+  updateApplicantStatus
 } from "../controllers/jobController.js";
 
 const router = express.Router();
 
-// Recruiter create job
-router.post("/", verifyToken, checkRole(["recruiter"]), createJob);
+// Recruiter routes
+router.get("/my-jobs", verifyToken, checkRole(["recruiter"]), getMyJobs);
+router.get("/:id/applicants", verifyToken, checkRole(["recruiter"]), getJobApplicants);
+router.put("/:jobId/applicants/:applicantId/status", verifyToken, checkRole(["recruiter"]), updateApplicantStatus);
 
-// Public - Get all jobs
-router.get("/", getJobs);
-
-// Authenticated - Save a job
+// Seeker routes
+router.post("/apply/:id", verifyToken, checkRole(["seeker", "jobseeker"]), applyToJob);
+router.get("/my-applications", verifyToken, checkRole(["seeker", "jobseeker"]), getMyApplications);
 router.post("/save/:id", verifyToken, saveJob);
-
-// Authenticated - Get saved jobs
 router.get("/saved", verifyToken, getSavedJobs);
-
-// Authenticated - Remove a saved job
 router.delete("/saved/:id", verifyToken, removeSavedJob);
 
-// Public - Get single job
+// Public routes
+router.post("/", verifyToken, checkRole(["recruiter"]), createJob);
+router.get("/", getJobs);
 router.get("/:id", getJobById);
-
-// Recruiter delete job
 router.delete("/:id", verifyToken, checkRole(["recruiter"]), deleteJob);
-
-// Recruiter my jobs
-router.get("/mine", verifyToken, checkRole(["recruiter"]), getMyJobs);
-
-// Recruiter update job
 router.put("/:id", verifyToken, checkRole(["recruiter"]), updateJob);
 
 export default router;

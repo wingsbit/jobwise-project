@@ -1,5 +1,24 @@
-// models/User.js
 import mongoose from "mongoose";
+
+const appliedJobSchema = new mongoose.Schema(
+  {
+    job: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Job",
+      required: true,
+    },
+    appliedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    status: {
+      type: String,
+      enum: ["Pending", "Shortlisted", "Rejected", "Hired"],
+      default: "Pending",
+    },
+  },
+  { _id: false }
+);
 
 const userSchema = new mongoose.Schema(
   {
@@ -9,7 +28,7 @@ const userSchema = new mongoose.Schema(
     avatar: { type: String },
     role: {
       type: String,
-      enum: ["seeker", "recruiter"],
+      enum: ["seeker", "jobseeker", "recruiter"],
       default: "seeker",
     },
     savedJobs: [
@@ -18,6 +37,8 @@ const userSchema = new mongoose.Schema(
         ref: "Job",
       },
     ],
+    appliedJobs: [appliedJobSchema],
+    resume: { type: String },
   },
   { timestamps: true }
 );

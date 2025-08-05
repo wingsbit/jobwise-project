@@ -8,7 +8,7 @@ export default function Layout() {
   const { user } = useAuth();
   const location = useLocation();
 
-  // Public routes where footer should be visible (even if logged in)
+  // Define public routes where footer should show
   const publicRoutes = [
     "/",
     "/home",
@@ -16,32 +16,32 @@ export default function Layout() {
     "/jobs/",
     "/jobs/:id",
     "/login",
-    "/signup"
+    "/signup",
   ];
 
-  // Check if current route starts with any of the public routes
+  // Determine if current path matches a public route
   const isPublicPage = publicRoutes.some((route) =>
     location.pathname.startsWith(route.replace(/\/$/, ""))
   );
 
   // Show footer if:
-  // - User is not logged in (guest)
-  // - OR user is logged in but currently on a public page
+  // - Guest (not logged in)
+  // - Logged in but viewing a public page
   const showFooter = !user || isPublicPage;
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-      {/* Sticky Navbar */}
+      {/* Navbar - always visible */}
       <Navbar />
 
-      {/* Main Content */}
+      {/* Main content */}
       <main className="flex-grow">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Outlet />
         </div>
       </main>
 
-      {/* Footer - Only show based on rules */}
+      {/* Conditional footer */}
       {showFooter && <Footer />}
     </div>
   );

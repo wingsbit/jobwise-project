@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
+  // Keep /api here so every call automatically goes to backend API
   baseURL: `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api`,
   withCredentials: true,
 });

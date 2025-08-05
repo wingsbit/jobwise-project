@@ -1,83 +1,122 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "@/lib/api";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import RoleProtectedRoute from "@/components/auth/RoleProtectedRoute";
 
 export default function MyApplications() {
-  const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // ✅ Role guard: Jobseeker only
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user) navigate("/login");
-      else if (!["jobseeker", "seeker"].includes(user.role)) navigate("/dashboard");
-    }
-  }, [user, authLoading, navigate]);
+  const statusColors = {
+    Pending: "bg-yellow-100 text-yellow-800",
+    Shortlisted: "bg-blue-100 text-blue-800",
+    Rejected: "bg-red-100 text-red-800",
+    Hired: "bg-green-100 text-green-800",
+  };
 
-  useEffect(() => {
-    const fetchApplications = async () => {
-      try {
-        const res = await api.get("/api/applications/my");
-        setApplications(res.data);
-      } catch (error) {
-        console.error("Error fetching applications:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchApplications();
-  }, []);
-
-  const handleWithdraw = async (id) => {
+  const fetchApplications = async () => {
+    setLoading(true);
+    setError("");
     try {
-      await api.delete(`/api/applications/${id}`);
-      setApplications((prev) => prev.filter((app) => app._id !== id));
-    } catch (error) {
-      console.error("Error withdrawing application:", error);
+      const res = await api.get("/jobs/my-applications");
+      setApplications(res.data || []);
+    } catch (err) {
+      console.error("Error fetching applications:", err);
+      setError(err.response?.data?.msg || "Failed to load applications.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (authLoading || loading) return <div className="p-6">Loading applications...</div>;
+  useEffect(() => {
+    fetchApplications();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-gray-600">
+        Loading your applications...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <RoleProtectedRoute allowedRoles={["jobseeker", "seeker"]}>
+        <div className="p-6 text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={fetchApplications}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </RoleProtectedRoute>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">My Applications</h1>
-      {applications.length === 0 ? (
-        <p className="text-gray-600">You haven’t applied to any jobs yet.</p>
-      ) : (
-        <div className="grid gap-4">
-          {applications.map((app) => (
-            <Card key={app._id}>
-              <CardHeader className="flex justify-between items-center">
+    <RoleProtectedRoute allowedRoles={["jobseeker", "seeker"]}>
+      <div className="max-w-4xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-4">My Applications</h1>
+
+        {applications.length === 0 ? (
+          <div className="text-gray-500 text-center py-10">
+            <p>You haven't applied to any jobs yet.</p>
+            <Link
+              to="/jobs"
+              className="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Browse Jobs
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {applications.map((job) => (
+              <div
+                key={job._id}
+                className="border rounded p-4 bg-white shadow-sm flex justify-between items-center"
+              >
                 <div>
-                  <CardTitle>{app.jobTitle}</CardTitle>
-                  <p className="text-sm text-gray-600">
-                    {app.company} — Applied on {new Date(app.appliedDate).toLocaleDateString()}
-                  </p>
-                  <p className="text-sm mt-1 font-medium">
-                    Status:{" "}
-                    <span className={app.status.includes("Interview") ? "text-green-600" : "text-yellow-600"}>
-                      {app.status}
-                    </span>
-                  </p>
+                  <h2 className="font-medium">{job.title}</h2>
+                  {job.company && (
+                    <p className="text-sm text-gray-600">{job.company}</p>
+                  )}
+                  {job.location && (
+                    <p className="text-sm text-gray-500">{job.location}</p>
+                  )}
+                  {job.appliedAt && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Applied on{" "}
+                      {new Date(job.appliedAt).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </p>
+                  )}
+                  {/* Status */}
+                  <span
+                    className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium ${
+                      statusColors[job.status] || statusColors.Pending
+                    }`}
+                  >
+                    {job.status || "Pending"}
+                  </span>
                 </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => handleWithdraw(app._id)}
+                <Link
+                  to={`/jobs/${job._id}`}
+                  className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
                 >
-                  Withdraw
-                </Button>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+                  View Job
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </RoleProtectedRoute>
   );
 }
