@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 import { DEFAULT_AVATAR } from "@/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { X } from "lucide-react";
 
 export default function Profile() {
   const { user, setUser } = useAuth();
@@ -18,6 +19,9 @@ export default function Profile() {
       : DEFAULT_AVATAR
   );
 
+  const [skills, setSkills] = useState(user?.skills || []);
+  const [newSkill, setNewSkill] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -28,6 +32,20 @@ export default function Profile() {
       setAvatarFile(file);
       setAvatarPreview(URL.createObjectURL(file));
     }
+  };
+
+  // Add skill
+  const handleAddSkill = () => {
+    const skill = newSkill.trim();
+    if (skill && !skills.includes(skill)) {
+      setSkills([...skills, skill]);
+      setNewSkill("");
+    }
+  };
+
+  // Remove skill
+  const handleRemoveSkill = (skill) => {
+    setSkills(skills.filter((s) => s !== skill));
   };
 
   // Submit form
@@ -42,13 +60,14 @@ export default function Profile() {
       formData.append("email", email);
       if (password) formData.append("password", password);
       if (avatarFile) formData.append("avatar", avatarFile);
+      formData.append("skills", JSON.stringify(skills)); // ✅ send skills array
 
       const res = await api.patch("/users/me", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setUser(res.data.user); // update context
-      setPassword(""); // clear password input
+      setUser(res.data.user);
+      setPassword("");
       setMsg("✅ Profile updated successfully!");
     } catch (error) {
       setMsg(error.response?.data?.msg || "❌ Failed to update profile");
@@ -125,6 +144,40 @@ export default function Profile() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+            </div>
+
+            {/* Skills */}
+            <div>
+              <label className="block mb-1 font-medium">Skills</label>
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  className="flex-1 border rounded p-2"
+                  placeholder="e.g. JavaScript"
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddSkill())}
+                />
+                <Button type="button" onClick={handleAddSkill}>
+                  Add
+                </Button>
+              </div>
+              {skills.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {skills.map((skill) => (
+                    <span
+                      key={skill}
+                      className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm"
+                    >
+                      {skill}
+                      <X
+                        className="w-4 h-4 cursor-pointer"
+                        onClick={() => handleRemoveSkill(skill)}
+                      />
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Save Button */}

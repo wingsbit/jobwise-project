@@ -31,6 +31,10 @@ const userSchema = new mongoose.Schema(
       enum: ["seeker", "jobseeker", "recruiter"],
       default: "seeker",
     },
+    skills: {
+      type: [String],
+      default: [],
+    },
     savedJobs: [
       {
         type: mongoose.Schema.Types.ObjectId,

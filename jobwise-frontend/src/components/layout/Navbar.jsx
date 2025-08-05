@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { DEFAULT_AVATAR } from "@/constants";
 import {
@@ -14,6 +14,7 @@ import { Menu } from "lucide-react";
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const avatarUrl = user?.avatar
     ? `${import.meta.env.VITE_API_URL}/uploads/${user.avatar}`
@@ -24,17 +25,20 @@ export default function Navbar() {
     navigate("/login");
   };
 
-  // Role checks
   const isJobSeeker = ["jobseeker", "seeker"].includes(user?.role);
   const isRecruiter = user?.role === "recruiter";
-
-  // Mock: replace this with real subscription check later
   const isPremium = user?.isPremium;
+
+  const navLinks = [
+    { to: "/jobs", label: "Jobs" },
+    { to: "/pricing", label: "Pricing" },
+    { to: "/advisor", label: "AI Advisor" },
+  ];
 
   return (
     <header className="border-b bg-white sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between px-4 py-3">
-        
+
         {/* Logo */}
         <Link to="/" className="text-xl font-bold text-blue-600">
           Jobwise
@@ -42,9 +46,23 @@ export default function Navbar() {
 
         {/* Center Navigation */}
         <nav className="hidden md:flex gap-6 text-gray-700 font-medium">
-          <Link to="/jobs" className="hover:text-blue-600">Jobs</Link>
-          <Link to="/pricing" className="hover:text-blue-600">Pricing</Link>
-          <Link to="/advisor" className="hover:text-blue-600">AI Advisor</Link>
+          {navLinks.map((link) => {
+            const isActive = location.pathname.startsWith(link.to);
+            return (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`relative pb-1 hover:text-blue-600 ${
+                  isActive ? "text-blue-600 font-semibold" : ""
+                }`}
+              >
+                {link.label}
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 rounded-full"></span>
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Right Side */}
@@ -58,18 +76,15 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              {/* Upgrade for non-premium */}
               {!isPremium && (
                 <Button
                   variant="default"
                   onClick={() => navigate("/pricing")}
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white flex items-center gap-2 animate-smooth-glow"
                 >
-                  Upgrade
+                  <span>⭐</span> Upgrade
                 </Button>
               )}
-
-              {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <img
@@ -79,8 +94,6 @@ export default function Navbar() {
                   />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  
-                  {/* Role-based Dashboard Links */}
                   {isJobSeeker && (
                     <>
                       <DropdownMenuItem onClick={() => navigate("/dashboard")}>
@@ -104,8 +117,6 @@ export default function Navbar() {
                       </DropdownMenuItem>
                     </>
                   )}
-
-                  {/* Shared */}
                   <DropdownMenuItem onClick={() => navigate("/profile")}>
                     Profile
                   </DropdownMenuItem>
@@ -131,10 +142,11 @@ export default function Navbar() {
             </SheetTrigger>
             <SheetContent side="right" className="p-6 w-64">
               <div className="flex flex-col gap-6">
-                <Link to="/jobs">Jobs</Link>
-                <Link to="/pricing">Pricing</Link>
-                <Link to="/advisor">AI Advisor</Link>
-
+                {navLinks.map((link) => (
+                  <Link key={link.to} to={link.to}>
+                    {link.label}
+                  </Link>
+                ))}
                 {!user ? (
                   <>
                     <Button variant="outline" onClick={() => navigate("/login")}>
@@ -150,9 +162,9 @@ export default function Navbar() {
                       <Button
                         variant="default"
                         onClick={() => navigate("/pricing")}
-                        className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                        className="bg-yellow-500 hover:bg-yellow-600 text-white flex items-center gap-2 animate-smooth-glow"
                       >
-                        Upgrade
+                        <span>⭐</span> Upgrade
                       </Button>
                     )}
                     {isJobSeeker && (
@@ -191,6 +203,23 @@ export default function Navbar() {
           </Sheet>
         </div>
       </div>
+
+      {/* Custom Smooth Glow Animation */}
+      <style>{`
+        @keyframes smoothGlow {
+          0%, 95%, 100% {
+            box-shadow: 0 0 0px rgba(255, 215, 0, 0.6);
+            transform: scale(1);
+          }
+          50% {
+            box-shadow: 0 0 10px rgba(255, 215, 0, 1);
+            transform: scale(1.02);
+          }
+        }
+        .animate-smooth-glow {
+          animation: smoothGlow 5s infinite ease-in-out;
+        }
+      `}</style>
     </header>
   );
 }

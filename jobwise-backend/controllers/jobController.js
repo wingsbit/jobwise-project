@@ -40,6 +40,52 @@ export const getJobs = async (req, res, next) => {
 };
 
 /**
+ * @desc Get recommended jobs for logged-in seeker
+ */
+export const getRecommendedJobs = async (req, res, next) => {
+  try {
+    if (!["seeker", "jobseeker"].includes(req.user.role)) {
+      return res.status(403).json({ msg: "Only job seekers can get recommendations" });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    // ✅ No skills → tell frontend to show Add Skills card
+    if (!user.skills || user.skills.length === 0) {
+      return res.status(200).json({
+        missingSkills: true,
+        jobs: [],
+      });
+    }
+
+    // Match jobs by skills
+    let query = {
+      skills: { $in: user.skills.map(skill => new RegExp(skill, "i")) },
+    };
+
+    let jobs = await Job.find(query)
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .populate("createdBy", "name email");
+
+    // No matches → fallback to latest jobs
+    if (!jobs.length) {
+      jobs = await Job.find()
+        .sort({ createdAt: -1 })
+        .limit(3)
+        .populate("createdBy", "name email");
+    }
+
+    res.status(200).json({
+      missingSkills: false,
+      jobs,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @desc Get single job by ID (public)
  */
 export const getJobById = async (req, res, next) => {
@@ -127,7 +173,6 @@ export const applyToJob = async (req, res, next) => {
     if (!job) return res.status(404).json({ msg: "Job not found" });
 
     const user = await User.findById(req.user._id);
-
     const alreadyApplied = user.appliedJobs.some((a) => a.job.toString() === jobId);
 
     if (!alreadyApplied) {
@@ -247,7 +292,6 @@ export const updateApplicantStatus = async (req, res, next) => {
 
     res.status(200).json({ msg: "Status updated successfully" });
   } catch (error) {
-    console.error("❌ Error updating applicant status:", error);
     next(error);
   }
 };

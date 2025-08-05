@@ -14,7 +14,8 @@ import {
   applyToJob,
   getJobApplicants,
   getMyApplications,
-  updateApplicantStatus
+  updateApplicantStatus,
+  getRecommendedJobs // ✅ Added here
 } from "../controllers/jobController.js";
 
 const router = express.Router();
@@ -25,6 +26,12 @@ router.get("/:id/applicants", verifyToken, checkRole(["recruiter"]), getJobAppli
 router.put("/:jobId/applicants/:applicantId/status", verifyToken, checkRole(["recruiter"]), updateApplicantStatus);
 
 // Seeker routes
+router.get(
+  "/recommended",
+  verifyToken,
+  checkRole(["seeker", "jobseeker"]),
+  getRecommendedJobs
+);
 router.post("/apply/:id", verifyToken, checkRole(["seeker", "jobseeker"]), applyToJob);
 router.get("/my-applications", verifyToken, checkRole(["seeker", "jobseeker"]), getMyApplications);
 router.post("/save/:id", verifyToken, saveJob);
