@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { X } from "lucide-react";
 
 export default function Profile() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, refreshUser } = useAuth();
 
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
@@ -24,7 +24,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
-  // Handle avatar file select
+  // ✅ Handle avatar file select
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -33,7 +33,7 @@ export default function Profile() {
     }
   };
 
-  // Add skill
+  // ✅ Add skill
   const handleAddSkill = () => {
     const skill = newSkill.trim();
     if (skill && !skills.includes(skill)) {
@@ -42,12 +42,12 @@ export default function Profile() {
     }
   };
 
-  // Remove skill
+  // ✅ Remove skill
   const handleRemoveSkill = (skill) => {
     setSkills(skills.filter((s) => s !== skill));
   };
 
-  // Save profile changes
+  // ✅ Save profile changes
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -66,6 +66,9 @@ export default function Profile() {
       if (result.success) {
         setPassword(""); // clear password input
         setMsg("✅ Profile updated successfully!");
+
+        // ✅ Immediately refresh AuthContext so Dashboard updates instantly
+        await refreshUser();
       } else {
         setMsg(`❌ ${result.message}`);
       }
@@ -83,6 +86,7 @@ export default function Profile() {
           <CardTitle>My Profile</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* ✅ Success / Error message */}
           {msg && (
             <p
               className={`mb-4 ${

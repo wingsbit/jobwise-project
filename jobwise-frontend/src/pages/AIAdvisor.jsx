@@ -1,14 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export default function AIAdvisor() {
+  const { user } = useAuth();
   const [skills, setSkills] = useState("");
   const [goals, setGoals] = useState("");
   const [advice, setAdvice] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Prefill skills if available in profile
+  useEffect(() => {
+    if (user?.skills?.length) {
+      setSkills(user.skills.join(", "));
+    }
+  }, [user]);
 
   const handleGetAdvice = async () => {
     if (!skills.trim() || !goals.trim()) return;
@@ -21,6 +31,20 @@ export default function AIAdvisor() {
       setAdvice("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveAdvice = async () => {
+    if (!advice) return;
+    setSaving(true);
+    try {
+      await api.post("/api/advisor/save", { advice });
+      alert("Your roadmap has been saved to your profile!");
+    } catch (error) {
+      console.error("Error saving advice:", error);
+      alert("Failed to save roadmap. Please try again.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -45,9 +69,18 @@ export default function AIAdvisor() {
             {loading ? "Getting Advice..." : "Get Advice"}
           </Button>
           {advice && (
-            <div className="mt-4 p-4 bg-gray-50 border rounded text-sm text-gray-700 whitespace-pre-line">
-              {advice}
-            </div>
+            <>
+              <div className="mt-4 p-4 bg-gray-50 border rounded text-sm text-gray-700 whitespace-pre-line">
+                {advice}
+              </div>
+              <Button
+                onClick={handleSaveAdvice}
+                disabled={saving}
+                className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white"
+              >
+                {saving ? "Saving..." : "Save Roadmap"}
+              </Button>
+            </>
           )}
         </CardContent>
       </Card>

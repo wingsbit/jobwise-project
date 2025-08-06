@@ -34,6 +34,8 @@ export const registerUser = async (req, res) => {
       password: hashedPassword,
       role: finalRole,
       avatar: null,
+      skills: [],
+      careerRoadmap: "", // start empty
     });
 
     res.status(201).json({
@@ -44,6 +46,8 @@ export const registerUser = async (req, res) => {
         email: user.email,
         role: user.role,
         avatar: user.avatar || null,
+        skills: user.skills || [],
+        careerRoadmap: user.careerRoadmap || "",
       },
     });
   } catch (error) {
@@ -71,7 +75,6 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ msg: "Invalid email or password" });
     }
 
-    // ✅ Response shape matches registerUser
     res.json({
       token: generateToken(user._id),
       user: {
@@ -80,6 +83,8 @@ export const loginUser = async (req, res) => {
         email: user.email,
         role: user.role,
         avatar: user.avatar || null,
+        skills: user.skills || [],
+        careerRoadmap: user.careerRoadmap || "",
       },
     });
   } catch (error) {
@@ -95,7 +100,11 @@ export const getMe = async (req, res) => {
     if (!user) {
       return res.status(404).json({ msg: "User not found" });
     }
-    res.json(user);
+    res.json({
+      ...user.toObject(),
+      skills: user.skills || [],
+      careerRoadmap: user.careerRoadmap || "",
+    });
   } catch (error) {
     console.error("GetMe Error:", error);
     res.status(500).json({ msg: "Server error" });

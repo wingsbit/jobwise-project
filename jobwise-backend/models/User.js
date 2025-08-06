@@ -43,6 +43,7 @@ const userSchema = new mongoose.Schema(
     ],
     appliedJobs: [appliedJobSchema],
     resume: { type: String },
+    careerRoadmap: { type: String, default: "" },
   },
   { timestamps: true }
 );

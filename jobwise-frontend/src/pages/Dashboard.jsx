@@ -1,22 +1,43 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Briefcase, Bookmark, Bot, FileText, PlusCircle } from "lucide-react";
+import { Briefcase, Bookmark, Bot, FileText, PlusCircle, Target } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import FeaturedJobs from "@/components/ui/FeaturedJobs";
 import { DEFAULT_AVATAR } from "@/constants";
 
 export default function Dashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [recommendedJobs, setRecommendedJobs] = useState([]);
   const [missingSkills, setMissingSkills] = useState(false);
 
-  // Fetch jobs
+  // 🔹 Helper to extract simple keywords from roadmap
+  const extractSkillsFromRoadmap = (roadmapText) => {
+    if (!roadmapText) return [];
+    return roadmapText
+      .split(/\s|,|\.|\n/) // split on spaces, commas, dots, and newlines
+      .filter((word) => /^[a-zA-Z]+$/.test(word)) // keep words only
+      .map((word) => word.toLowerCase())
+      .filter((w, i, arr) => arr.indexOf(w) === i) // unique
+      .slice(0, 6); // only top 6
+  };
+
+  // ✅ Fetch recommended jobs
   const fetchJobs = async () => {
     try {
-      const res = await api.get("/api/jobs/recommended");
+      let endpoint = "/api/jobs/recommended";
+
+      // If roadmap exists, send extracted skills in query
+      if (user?.careerRoadmap) {
+        const roadmapSkills = extractSkillsFromRoadmap(user.careerRoadmap);
+        if (roadmapSkills.length > 0) {
+          endpoint += `?skills=${encodeURIComponent(roadmapSkills.join(","))}`;
+        }
+      }
+
+      const res = await api.get(endpoint);
       setMissingSkills(res.data.missingSkills || false);
       setRecommendedJobs(res.data.jobs || []);
     } catch (err) {
@@ -26,17 +47,15 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchJobs();
-
-    // Listen for profile updates → refresh recommendations instantly
-    const handleSkillsUpdated = () => {
+    const handleSkillsUpdated = async () => {
+      await refreshUser();
       fetchJobs();
     };
     document.addEventListener("skillsUpdated", handleSkillsUpdated);
-
     return () => {
       document.removeEventListener("skillsUpdated", handleSkillsUpdated);
     };
-  }, []);
+  }, [user?.careerRoadmap]); // refresh if roadmap changes
 
   if (loading) {
     return (
@@ -55,18 +74,18 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
-      <Card className="p-6 flex flex-col md:flex-row md:items-center gap-6 bg-gradient-to-r from-blue-50 to-white border-blue-100">
+      <Card className="p-6 flex flex-col md:flex-row md:items-center gap-6 bg-gradient-to-r from-blue-50 to-white border-blue-100 shadow-sm">
         <img
           src={avatarUrl}
           alt="avatar"
-          className="w-20 h-20 rounded-full border shadow-sm"
+          className="w-20 h-20 rounded-full border shadow-sm object-cover"
         />
         <div>
           <h1 className="text-2xl font-bold">
             Welcome back, {user?.name || "User"} 👋
           </h1>
           <p className="text-gray-600 mt-1">
-            Your personalized AI-powered career dashboard is ready. Let’s find your next big opportunity.
+            Your personalized AI-powered career dashboard is ready.
           </p>
           <button
             onClick={() => navigate("/profile")}
@@ -77,8 +96,29 @@ export default function Dashboard() {
         </div>
       </Card>
 
+      {/* Career Roadmap */}
+      {user?.careerRoadmap && (
+        <Card className="p-6 bg-gradient-to-r from-green-50 to-white border-green-200 shadow-sm">
+          <CardHeader className="flex items-center gap-2">
+            <Target className="w-6 h-6 text-green-600" />
+            <CardTitle>Your AI Career Roadmap</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="whitespace-pre-line text-gray-700 leading-relaxed border-l-4 border-green-300 pl-4">
+              {user.careerRoadmap}
+            </p>
+            <button
+              onClick={() => navigate("/advisor")}
+              className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            >
+              Update Roadmap
+            </button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* AI Advisor Teaser */}
-      <Card className="p-6 bg-gradient-to-r from-purple-50 to-white border-purple-100">
+      <Card className="p-6 bg-gradient-to-r from-purple-50 to-white border-purple-100 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg font-bold">
             <Bot className="w-6 h-6 text-purple-600" />
@@ -87,7 +127,7 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <p className="text-gray-600 mb-4">
-            Discover your perfect career path with the power of AI. Our advisor analyzes your skills, goals, and interests to recommend jobs tailored just for you.
+            Discover your perfect career path with the power of AI.
           </p>
           <button
             onClick={() => navigate("/advisor")}
@@ -101,7 +141,6 @@ export default function Dashboard() {
       {/* Recommended Jobs */}
       <div>
         <h2 className="text-xl font-bold mb-4">Recommended for You</h2>
-
         {missingSkills ? (
           <Card
             className="p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:shadow-lg transition"
@@ -110,7 +149,7 @@ export default function Dashboard() {
             <PlusCircle className="w-10 h-10 text-blue-600 mb-3" />
             <h3 className="font-semibold">Add Your Skills</h3>
             <p className="text-gray-600 text-sm mt-1">
-              Update your profile with your top skills to get job recommendations tailored just for you.
+              Update your profile to get tailored job recommendations.
             </p>
           </Card>
         ) : recommendedJobs.length > 0 ? (
@@ -120,60 +159,9 @@ export default function Dashboard() {
             ))}
           </div>
         ) : (
-          <p className="text-gray-500">
-            No recommendations yet. Update your profile to help us find the best matches for you.
-          </p>
+          <p className="text-gray-500">No recommendations yet.</p>
         )}
       </div>
-
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <ActionCard
-            icon={<Briefcase className="w-6 h-6 text-blue-600" />}
-            title="Search Jobs"
-            description="Browse and apply for open positions."
-            onClick={() => navigate("/jobs")}
-          />
-          <ActionCard
-            icon={<Bookmark className="w-6 h-6 text-green-600" />}
-            title="Saved Jobs"
-            description="View and manage jobs you’ve saved."
-            onClick={() => navigate("/saved-jobs")}
-          />
-          <ActionCard
-            icon={<Bot className="w-6 h-6 text-purple-600" />}
-            title="AI Career Advisor"
-            description="Get tailored job recommendations."
-            onClick={() => navigate("/advisor")}
-          />
-          <ActionCard
-            icon={<FileText className="w-6 h-6 text-orange-600" />}
-            title="My Applications"
-            description="Track your submitted applications."
-            onClick={() => navigate("/applications")}
-          />
-        </div>
-      </div>
     </div>
-  );
-}
-
-/* 🔹 Reusable Action Card Component */
-function ActionCard({ icon, title, description, onClick }) {
-  return (
-    <Card
-      className="hover:shadow-lg transition cursor-pointer border-gray-100"
-      onClick={onClick}
-    >
-      <CardHeader className="flex flex-row items-center gap-3">
-        {icon}
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-gray-600">{description}</p>
-      </CardContent>
-    </Card>
   );
 }

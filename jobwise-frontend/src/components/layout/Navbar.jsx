@@ -38,7 +38,6 @@ export default function Navbar() {
   return (
     <header className="border-b bg-white sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between px-4 py-3">
-
         {/* Logo */}
         <Link to="/" className="text-xl font-bold text-blue-600">
           Jobwise
@@ -80,7 +79,7 @@ export default function Navbar() {
                 <Button
                   variant="default"
                   onClick={() => navigate("/pricing")}
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white flex items-center gap-2 animate-smooth-glow"
+                  className="premium-upgrade-btn flex items-center gap-2"
                 >
                   <span>⭐</span> Upgrade
                 </Button>
@@ -95,55 +94,37 @@ export default function Navbar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-48 bg-white/95 backdrop-blur-md shadow-lg rounded-lg border border-gray-100 overflow-hidden animate-dropdown-fade"
+                  className="w-52 bg-white/95 backdrop-blur-md shadow-lg rounded-lg border border-gray-100 overflow-hidden animate-dropdown-fade"
                 >
                   {isJobSeeker && (
                     <>
-                      <DropdownMenuItem
-                        onClick={() => navigate("/dashboard")}
-                        className="px-4 py-2 hover:bg-blue-50 transition-colors"
-                      >
+                      <DropdownMenuItem onClick={() => navigate("/dashboard")}>
                         Dashboard
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => navigate("/applications")}
-                        className="px-4 py-2 hover:bg-blue-50 transition-colors"
-                      >
-                        My Applications
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => navigate("/saved-jobs")}
-                        className="px-4 py-2 hover:bg-blue-50 transition-colors"
-                      >
+                      <DropdownMenuItem onClick={() => navigate("/saved-jobs")}>
                         Saved Jobs
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/applications")}>
+                        My Applications
                       </DropdownMenuItem>
                     </>
                   )}
                   {isRecruiter && (
                     <>
-                      <DropdownMenuItem
-                        onClick={() => navigate("/my-jobs")}
-                        className="px-4 py-2 hover:bg-blue-50 transition-colors"
-                      >
+                      <DropdownMenuItem onClick={() => navigate("/my-jobs")}>
                         My Jobs
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => navigate("/jobs/new")}
-                        className="px-4 py-2 hover:bg-blue-50 transition-colors"
-                      >
+                      <DropdownMenuItem onClick={() => navigate("/jobs/new")}>
                         Post a Job
                       </DropdownMenuItem>
                     </>
                   )}
-                  <DropdownMenuItem
-                    onClick={() => navigate("/profile")}
-                    className="px-4 py-2 hover:bg-blue-50 transition-colors"
-                  >
+                  <DropdownMenuItem onClick={() => navigate("/profile")}>
                     Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                    className="text-red-600"
                   >
                     Logout
                   </DropdownMenuItem>
@@ -183,7 +164,7 @@ export default function Navbar() {
                       <Button
                         variant="default"
                         onClick={() => navigate("/pricing")}
-                        className="bg-yellow-500 hover:bg-yellow-600 text-white flex items-center gap-2 animate-smooth-glow"
+                        className="premium-upgrade-btn flex items-center gap-2"
                       >
                         <span>⭐</span> Upgrade
                       </Button>
@@ -193,11 +174,11 @@ export default function Navbar() {
                         <Button variant="ghost" onClick={() => navigate("/dashboard")}>
                           Dashboard
                         </Button>
-                        <Button variant="ghost" onClick={() => navigate("/applications")}>
-                          My Applications
-                        </Button>
                         <Button variant="ghost" onClick={() => navigate("/saved-jobs")}>
                           Saved Jobs
+                        </Button>
+                        <Button variant="ghost" onClick={() => navigate("/applications")}>
+                          My Applications
                         </Button>
                       </>
                     )}
@@ -227,18 +208,26 @@ export default function Navbar() {
 
       {/* Custom Animations */}
       <style>{`
-        @keyframes smoothGlow {
-          0%, 95%, 100% {
-            box-shadow: 0 0 0px rgba(255, 215, 0, 0.6);
+        /* Premium Glow */
+        @keyframes premiumGlow {
+          0%, 100% {
+            box-shadow: 0 0 6px rgba(255, 215, 0, 0.5), 0 0 15px rgba(255, 215, 0, 0.2);
             transform: scale(1);
           }
           50% {
-            box-shadow: 0 0 10px rgba(255, 215, 0, 1);
-            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.9), 0 0 30px rgba(255, 223, 0, 0.6);
+            transform: scale(1.03);
           }
         }
-        .animate-smooth-glow {
-          animation: smoothGlow 5s infinite ease-in-out;
+        .premium-upgrade-btn {
+          background: linear-gradient(90deg, #FFD700, #FFC000);
+          color: #fff;
+          font-weight: 600;
+          animation: premiumGlow 3.5s infinite ease-in-out;
+          border: none;
+        }
+        .premium-upgrade-btn:hover {
+          background: linear-gradient(90deg, #FFEA70, #FFD700);
         }
 
         /* Dropdown fade in */

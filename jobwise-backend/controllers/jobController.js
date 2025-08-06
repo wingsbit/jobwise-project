@@ -51,24 +51,39 @@ export const getRecommendedJobs = async (req, res, next) => {
 
     const user = await User.findById(req.user._id);
 
-    // ✅ No skills → send flag
-    if (!user.skills || user.skills.length === 0) {
+    // 1️⃣ Determine skill source (query param → roadmap → profile skills)
+    let skillsToSearch = [];
+
+    if (req.query.skills) {
+      // From query param (Dashboard roadmap extraction)
+      skillsToSearch = req.query.skills.split(",").map(s => s.trim());
+    } else if (user.careerRoadmap) {
+      // Extract keywords from roadmap text
+      skillsToSearch = extractSkillsFromRoadmap(user.careerRoadmap);
+    } else if (user.skills && user.skills.length > 0) {
+      skillsToSearch = user.skills;
+    }
+
+    // 2️⃣ No skills found → return missingSkills
+    if (!skillsToSearch || skillsToSearch.length === 0) {
       return res.status(200).json({
         missingSkills: true,
         jobs: [],
       });
     }
 
-    // ✅ Match jobs based on skills (case-insensitive)
-    const skillRegexes = user.skills.map(skill => new RegExp(skill.trim(), "i"));
+    // 3️⃣ Build regex for case-insensitive skill match
+    const skillRegexes = skillsToSearch.map(skill => new RegExp(skill.trim(), "i"));
+
+    // 4️⃣ Find matching jobs
     let jobs = await Job.find({
       skills: { $in: skillRegexes }
     })
       .sort({ createdAt: -1 })
-      .limit(6) // more jobs → dashboard can slice top 3
+      .limit(6)
       .populate("createdBy", "name email");
 
-    // ✅ Fallback: no matches → latest jobs
+    // 5️⃣ Fallback: no matches → latest jobs
     if (!jobs.length) {
       jobs = await Job.find()
         .sort({ createdAt: -1 })
@@ -85,6 +100,19 @@ export const getRecommendedJobs = async (req, res, next) => {
     console.error("Error in getRecommendedJobs:", error);
     next(error);
   }
+};
+
+/**
+ * 🔹 Extracts simple skill keywords from a roadmap text
+ */
+const extractSkillsFromRoadmap = (roadmapText) => {
+  if (!roadmapText) return [];
+  return roadmapText
+    .split(/\s|,|\.|\n/) // split on spaces, commas, dots, and newlines
+    .filter(word => /^[a-zA-Z]+$/.test(word)) // keep only alphabetic words
+    .map(word => word.toLowerCase())
+    .filter((w, i, arr) => arr.indexOf(w) === i) // unique
+    .slice(0, 6); // limit to top 6
 };
 
 /**
