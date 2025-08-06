@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import api from "@/lib/api";
 import { DEFAULT_AVATAR } from "@/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { X } from "lucide-react";
 
 export default function Profile() {
-  const { user, setUser } = useAuth();
+  const { user, updateProfile } = useAuth();
 
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
@@ -48,7 +47,7 @@ export default function Profile() {
     setSkills(skills.filter((s) => s !== skill));
   };
 
-  // Submit form
+  // Save profile changes
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -60,17 +59,18 @@ export default function Profile() {
       formData.append("email", email);
       if (password) formData.append("password", password);
       if (avatarFile) formData.append("avatar", avatarFile);
-      formData.append("skills", JSON.stringify(skills)); // ✅ send skills array
+      formData.append("skills", JSON.stringify(skills));
 
-      const res = await api.patch("/users/me", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const result = await updateProfile(formData);
 
-      setUser(res.data.user);
-      setPassword("");
-      setMsg("✅ Profile updated successfully!");
+      if (result.success) {
+        setPassword(""); // clear password input
+        setMsg("✅ Profile updated successfully!");
+      } else {
+        setMsg(`❌ ${result.message}`);
+      }
     } catch (error) {
-      setMsg(error.response?.data?.msg || "❌ Failed to update profile");
+      setMsg("❌ Failed to update profile");
     } finally {
       setLoading(false);
     }
@@ -156,7 +156,10 @@ export default function Profile() {
                   placeholder="e.g. JavaScript"
                   value={newSkill}
                   onChange={(e) => setNewSkill(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddSkill())}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" &&
+                    (e.preventDefault(), handleAddSkill())
+                  }
                 />
                 <Button type="button" onClick={handleAddSkill}>
                   Add

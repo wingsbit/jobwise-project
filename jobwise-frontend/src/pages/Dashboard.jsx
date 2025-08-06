@@ -10,21 +10,32 @@ import { DEFAULT_AVATAR } from "@/constants";
 export default function Dashboard() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [recommendationData, setRecommendationData] = useState({
-    missingSkills: false,
-    jobs: [],
-  });
+  const [recommendedJobs, setRecommendedJobs] = useState([]);
+  const [missingSkills, setMissingSkills] = useState(false);
+
+  // Fetch jobs
+  const fetchJobs = async () => {
+    try {
+      const res = await api.get("/api/jobs/recommended");
+      setMissingSkills(res.data.missingSkills || false);
+      setRecommendedJobs(res.data.jobs || []);
+    } catch (err) {
+      console.error("Error fetching jobs:", err);
+    }
+  };
 
   useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const res = await api.get("/api/jobs/recommended");
-        setRecommendationData(res.data);
-      } catch (err) {
-        console.error("Error fetching jobs:", err);
-      }
-    };
     fetchJobs();
+
+    // Listen for profile updates → refresh recommendations instantly
+    const handleSkillsUpdated = () => {
+      fetchJobs();
+    };
+    document.addEventListener("skillsUpdated", handleSkillsUpdated);
+
+    return () => {
+      document.removeEventListener("skillsUpdated", handleSkillsUpdated);
+    };
   }, []);
 
   if (loading) {
@@ -90,7 +101,8 @@ export default function Dashboard() {
       {/* Recommended Jobs */}
       <div>
         <h2 className="text-xl font-bold mb-4">Recommended for You</h2>
-        {recommendationData.missingSkills ? (
+
+        {missingSkills ? (
           <Card
             className="p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:shadow-lg transition"
             onClick={() => navigate("/profile")}
@@ -101,9 +113,9 @@ export default function Dashboard() {
               Update your profile with your top skills to get job recommendations tailored just for you.
             </p>
           </Card>
-        ) : recommendationData.jobs.length > 0 ? (
+        ) : recommendedJobs.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-3">
-            {recommendationData.jobs.map((job) => (
+            {recommendedJobs.slice(0, 3).map((job) => (
               <FeaturedJobs key={job._id} job={job} />
             ))}
           </div>

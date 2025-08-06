@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [savedJobs, setSavedJobs] = useState([]);
   const [savedJobsLoading, setSavedJobsLoading] = useState(false);
 
-  // Fetch current user on page refresh
+  // ✅ Fetch current user on page refresh
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -32,6 +32,7 @@ export const AuthProvider = ({ children }) => {
     fetchUser();
   }, []);
 
+  // ✅ Fetch saved jobs
   const fetchSavedJobs = async (currentUser = user) => {
     if (!currentUser) return;
     try {
@@ -45,30 +46,60 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ✅ Login with avatar + role persistence
+  // ✅ Login
   const login = async (email, password) => {
     const res = await api.post("/auth/login", { email, password });
     localStorage.setItem("token", res.data.token);
-    setUser(res.data.user); // includes avatar + role
+    setUser(res.data.user);
     await fetchSavedJobs(res.data.user);
     return res.data.user;
   };
 
-  // ✅ Signup with avatar + role persistence
+  // ✅ Signup
   const signup = async (name, email, password, role) => {
     const res = await api.post("/auth/register", { name, email, password, role });
     localStorage.setItem("token", res.data.token);
-    setUser(res.data.user); // includes avatar + role
+    setUser(res.data.user);
     await fetchSavedJobs(res.data.user);
     return res.data.user;
   };
 
+  // ✅ Update Profile
+  const updateProfile = async (formData) => {
+    try {
+      const res = await api.patch("/users/me", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const updatedUser = res.data.user;
+      setUser(updatedUser);
+
+      // Refetch saved jobs if skills changed
+      if (formData.has("skills")) {
+        await fetchSavedJobs(updatedUser);
+      }
+
+      // 🔹 Let Dashboard know skills changed → refresh recommendations
+      document.dispatchEvent(new CustomEvent("skillsUpdated"));
+
+      return { success: true, user: updatedUser };
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      return {
+        success: false,
+        message: error.response?.data?.msg || "Failed to update profile",
+      };
+    }
+  };
+
+  // ✅ Logout
   const logout = () => {
     localStorage.removeItem("token");
     setUser(null);
     setSavedJobs([]);
   };
 
+  // ✅ Save / Unsave job
   const toggleSaveJob = async (jobId) => {
     try {
       if (savedJobs.includes(jobId)) {
@@ -97,6 +128,7 @@ export const AuthProvider = ({ children }) => {
         fetchSavedJobs,
         toggleSaveJob,
         setSavedJobs,
+        updateProfile, // 🔹 Used in Profile page
       }}
     >
       {children}

@@ -44,12 +44,14 @@ export const getJobs = async (req, res, next) => {
  */
 export const getRecommendedJobs = async (req, res, next) => {
   try {
+    // ✅ Only for seekers
     if (!["seeker", "jobseeker"].includes(req.user.role)) {
       return res.status(403).json({ msg: "Only job seekers can get recommendations" });
     }
 
-    const user = await User.findById(req.user._id).select("skills");
+    const user = await User.findById(req.user._id);
 
+    // ✅ No skills → send flag
     if (!user.skills || user.skills.length === 0) {
       return res.status(200).json({
         missingSkills: true,
@@ -57,14 +59,16 @@ export const getRecommendedJobs = async (req, res, next) => {
       });
     }
 
-    const skillRegexArray = user.skills.map(skill => new RegExp(skill, "i"));
-    let query = { skills: { $in: skillRegexArray } };
-
-    let jobs = await Job.find(query)
+    // ✅ Match jobs based on skills (case-insensitive)
+    const skillRegexes = user.skills.map(skill => new RegExp(skill.trim(), "i"));
+    let jobs = await Job.find({
+      skills: { $in: skillRegexes }
+    })
       .sort({ createdAt: -1 })
-      .limit(6)
+      .limit(6) // more jobs → dashboard can slice top 3
       .populate("createdBy", "name email");
 
+    // ✅ Fallback: no matches → latest jobs
     if (!jobs.length) {
       jobs = await Job.find()
         .sort({ createdAt: -1 })
@@ -72,12 +76,13 @@ export const getRecommendedJobs = async (req, res, next) => {
         .populate("createdBy", "name email");
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       missingSkills: false,
       jobs,
     });
+
   } catch (error) {
-    console.error("❌ Error fetching recommended jobs:", error);
+    console.error("Error in getRecommendedJobs:", error);
     next(error);
   }
 };
