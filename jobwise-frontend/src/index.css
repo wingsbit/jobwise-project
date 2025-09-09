@@ -1,3 +1,82 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ===== Tokens ===== */
+:root{
+  --color-brand:#0A2540;
+  --color-primary:#1DE9B6;
+  --color-accent:#FF6B6B;
+  --color-ghost:#F9FAFB;
+  --color-charcoal:#1F2937;
+  --ring-grad: linear-gradient(90deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+}
+
+/* Utilities */
+.glass{background:rgba(255,255,255,.65);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.accent-grad{background:linear-gradient(90deg,#6366f1 0%,#a855f7 35%,#ec4899 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ring-gradient{position:relative;border-radius:9999px;padding:2px;background:var(--ring-grad);box-shadow:0 0 0 1px rgba(255,255,255,.15) inset,0 10px 30px rgba(167,139,250,.25),0 4px 12px rgba(236,72,153,.18)}
+
+/* ======= STATIC AURORA + ORB (NO ANIMATION) ======= */
+.aurora-static{ /* just a soft color wash, no movement */
+  background-image:
+    radial-gradient(60% 50% at 10% 0%, rgba(236,72,153,.20), transparent 60%),
+    radial-gradient(50% 50% at 90% 10%, rgba(59,130,246,.20), transparent 60%),
+    radial-gradient(70% 60% at 50% 100%, rgba(168,85,247,.20), transparent 60%);
+}
+.orb-static{
+  background: var(--color-primary);
+  opacity: .28;
+  filter: blur(90px);
+}
+
+/* ======= BIG SQUARE GRID (80px) — STATIC ======= */
+.bg-grid-squares{
+  position:absolute; inset:0; pointer-events:none;
+  --line: rgba(16,24,40,0.22);
+  background:
+    linear-gradient(90deg, var(--line) 1px, transparent 1px),
+    linear-gradient(0deg,  var(--line) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mix-blend-mode: overlay;
+  opacity:.72;
+}
+.bg-grid-dots{
+  position:absolute; inset:0; pointer-events:none;
+  background: radial-gradient(circle, rgba(16,24,40,.55) 2px, transparent 3px);
+  background-size: 80px 80px;
+  background-position: center;
+  mix-blend-mode: overlay;
+  opacity:.46;
+}
+
+/* ======= STATIC EDGE GLOW (NO ANIMATION) ======= */
+/* Soft constant glow confined to the cracks */
+.edge-glow-x,
+.edge-glow-y{ position:absolute; inset:0; pointer-events:none; mix-blend-mode:screen; }
+
+.edge-glow-x::before{
+  content:""; position:absolute; inset:0;
+  background: repeating-linear-gradient(90deg,
+    rgba(255,255,255,.28) 0px, rgba(255,255,255,.28) 1px, /* bright line */
+    transparent 1px, transparent 80px                      /* spacing */
+  );
+  filter: blur(3px) saturate(120%);
+  opacity:.26;
+}
+.edge-glow-y::before{
+  content:""; position:absolute; inset:0;
+  background: repeating-linear-gradient(0deg,
+    rgba(255,255,255,.24) 0px, rgba(255,255,255,.24) 1px,
+    transparent 1px, transparent 80px
+  );
+  filter: blur(3px) saturate(120%);
+  opacity:.22;
+}
+
+/* Faint grain for polish (static) */
+.bg-noise::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0 0 0 0 0 0 0.012 0'%3E%3C/feFuncA%3E%3C/feComponentTransfer%3E%3CfeBlend mode='screen'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity:.04;
+}
