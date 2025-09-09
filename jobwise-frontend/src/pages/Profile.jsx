@@ -1,83 +1,82 @@
-import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { DEFAULT_AVATAR } from "@/constants";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { X } from "lucide-react";
+import { useState } from "react"
+import { useAuth } from "@/context/AuthContext"
+import { DEFAULT_AVATAR } from "@/constants"
+import { Button } from "@/components/ui/button"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { X } from "lucide-react"
 
 export default function Profile() {
-  const { user, updateProfile, refreshUser } = useAuth();
+  const { user, updateProfile, refreshUser } = useAuth()
 
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [password, setPassword] = useState("");
-  const [avatarFile, setAvatarFile] = useState(null);
+  const [name, setName] = useState(user?.name || "")
+  const [email, setEmail] = useState(user?.email || "")
+  const [password, setPassword] = useState("")
+  const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(
     user?.avatar
       ? `${import.meta.env.VITE_API_URL}/uploads/${user.avatar}`
       : DEFAULT_AVATAR
-  );
+  )
 
-  const [skills, setSkills] = useState(user?.skills || []);
-  const [newSkill, setNewSkill] = useState("");
+  const [skills, setSkills] = useState(user?.skills || [])
+  const [newSkill, setNewSkill] = useState("")
 
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(false)
+  const [msg, setMsg] = useState("")
 
   // ✅ Handle avatar file select
   const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files[0]
     if (file) {
-      setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
+      setAvatarFile(file)
+      setAvatarPreview(URL.createObjectURL(file))
     }
-  };
+  }
 
   // ✅ Add skill
   const handleAddSkill = () => {
-    const skill = newSkill.trim();
+    const skill = newSkill.trim()
     if (skill && !skills.includes(skill)) {
-      setSkills([...skills, skill]);
-      setNewSkill("");
+      setSkills([...skills, skill])
+      setNewSkill("")
     }
-  };
+  }
 
   // ✅ Remove skill
   const handleRemoveSkill = (skill) => {
-    setSkills(skills.filter((s) => s !== skill));
-  };
+    setSkills(skills.filter((s) => s !== skill))
+  }
 
   // ✅ Save profile changes
   const handleSave = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMsg("");
+    e.preventDefault()
+    setLoading(true)
+    setMsg("")
 
     try {
-      const formData = new FormData();
-      formData.append("name", name);
-      formData.append("email", email);
-      if (password) formData.append("password", password);
-      if (avatarFile) formData.append("avatar", avatarFile);
-      formData.append("skills", JSON.stringify(skills));
+      const formData = new FormData()
+      formData.append("name", name)
+      formData.append("email", email)
+      if (password) formData.append("password", password)
+      if (avatarFile) formData.append("avatar", avatarFile)
+      formData.append("skills", JSON.stringify(skills))
 
-      const result = await updateProfile(formData);
+      const result = await updateProfile(formData)
 
       if (result.success) {
-        setPassword(""); // clear password input
-        setMsg("✅ Profile updated successfully!");
-
-        // ✅ Immediately refresh AuthContext so Dashboard updates instantly
-        await refreshUser();
+        setPassword("") // clear password input
+        setMsg("✅ Profile updated successfully!")
+        await refreshUser() // refresh dashboard data asap
       } else {
-        setMsg(`❌ ${result.message}`);
+        setMsg(`❌ ${result.message}`)
       }
-    } catch (error) {
-      setMsg("❌ Failed to update profile");
+    } catch (_err) {
+      // underscore avoids the unused-var lint error
+      setMsg("❌ Failed to update profile")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-6">
@@ -195,5 +194,5 @@ export default function Profile() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

@@ -1,9 +1,10 @@
-import { NavLink } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { LogOut } from "lucide-react";
+import { NavLink } from "react-router-dom"
+import { useAuth } from "@/context/AuthContext"
+import { LogOut } from "lucide-react"
 
 export default function Sidebar() {
-  const { user, logout } = useAuth();
+  // rename unused user -> _user to satisfy eslint, keep logout intact
+  const { user: _user, logout } = useAuth()
 
   const navItems = [
     { label: "Dashboard", path: "/dashboard" },
@@ -11,7 +12,7 @@ export default function Sidebar() {
     { label: "Saved Jobs", path: "/saved-jobs" },
     { label: "Applications", path: "/applications" },
     { label: "AI Advisor", path: "/ai-advisor" },
-  ];
+  ]
 
   return (
     <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
@@ -45,5 +46,5 @@ export default function Sidebar() {
         <LogOut size={18} /> Logout
       </button>
     </aside>
-  );
+  )
 }

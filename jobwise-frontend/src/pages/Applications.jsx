@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import axios from "axios";
 
 export default function Applications() {
   const { user, loading: authLoading } = useAuth();

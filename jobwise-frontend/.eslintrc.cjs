@@ -15,10 +15,14 @@ module.exports = {
       "plugin:react-hooks/recommended",
       "plugin:jsx-a11y/recommended",
       "plugin:import/recommended",
+      // prevents "React must be in scope" with the new JSX transform
+      "plugin:react/jsx-runtime",
       "prettier"
     ],
     rules: {
       "react/prop-types": "off",
+      "react/react-in-jsx-scope": "off",
+      "react-hooks/exhaustive-deps": "warn",
       "import/order": [
         "warn",
         {
@@ -26,7 +30,8 @@ module.exports = {
           "newlines-between": "always"
         }
       ],
-      "react-hooks/exhaustive-deps": "warn"
+      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+      "no-console": "off"
     }
   }
   

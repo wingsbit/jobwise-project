@@ -15,34 +15,32 @@ import {
   getJobApplicants,
   getMyApplications,
   updateApplicantStatus,
-  getRecommendedJobs // ✅ Added here
+  getRecommendedJobs,
 } from "../controllers/jobController.js";
 
 const router = express.Router();
 
-// Recruiter routes
-router.get("/my-jobs", verifyToken, checkRole(["recruiter"]), getMyJobs);
-router.get("/:id/applicants", verifyToken, checkRole(["recruiter"]), getJobApplicants);
-router.put("/:jobId/applicants/:applicantId/status", verifyToken, checkRole(["recruiter"]), updateApplicantStatus);
+// Helpers
+const auth = (roles) => [verifyToken, checkRole(roles)];
 
-// Seeker routes
-router.get(
-  "/recommended",
-  verifyToken,
-  checkRole(["seeker", "jobseeker"]),
-  getRecommendedJobs
-);
-router.post("/apply/:id", verifyToken, checkRole(["seeker", "jobseeker"]), applyToJob);
-router.get("/my-applications", verifyToken, checkRole(["seeker", "jobseeker"]), getMyApplications);
+// Recruiter
+router.get("/my-jobs", ...auth(["recruiter"]), getMyJobs);
+router.get("/:id/applicants", ...auth(["recruiter"]), getJobApplicants);
+router.patch("/:jobId/applicants/:applicantId/status", ...auth(["recruiter"]), updateApplicantStatus);
+
+// Seeker
+router.get("/recommended", ...auth(["seeker", "jobseeker"]), getRecommendedJobs);
+router.post("/apply/:id", ...auth(["seeker", "jobseeker"]), applyToJob);
+router.get("/my-applications", ...auth(["seeker", "jobseeker"]), getMyApplications);
 router.post("/save/:id", verifyToken, saveJob);
 router.get("/saved", verifyToken, getSavedJobs);
 router.delete("/saved/:id", verifyToken, removeSavedJob);
 
-// Public routes
-router.post("/", verifyToken, checkRole(["recruiter"]), createJob);
+// Public / CRUD
+router.post("/", ...auth(["recruiter"]), createJob);
 router.get("/", getJobs);
 router.get("/:id", getJobById);
-router.delete("/:id", verifyToken, checkRole(["recruiter"]), deleteJob);
-router.put("/:id", verifyToken, checkRole(["recruiter"]), updateJob);
+router.delete("/:id", ...auth(["recruiter"]), deleteJob);
+router.patch("/:id", ...auth(["recruiter"]), updateJob);
 
 export default router;
